@@ -703,6 +703,21 @@ func (m *Chat) MessageItem(id string) chat.MessageItem {
 	return item
 }
 
+// SetThinkingBlocksVisible toggles finished assistant thinking blocks.
+func (m *Chat) SetThinkingBlocksVisible(visible bool) bool {
+	changed := false
+	for i := range m.list.Len() {
+		item, ok := m.list.ItemAt(i).(chat.ThinkingTogglable)
+		if !ok {
+			continue
+		}
+		if item.SetThinkingVisible(visible) {
+			changed = true
+		}
+	}
+	return changed
+}
+
 // ToggleExpandedSelectedItem expands the selected message item if it is expandable.
 func (m *Chat) ToggleExpandedSelectedItem() {
 	if expandable, ok := m.list.SelectedItem().(chat.Expandable); ok {

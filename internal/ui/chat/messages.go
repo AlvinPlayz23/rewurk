@@ -43,6 +43,13 @@ type Expandable interface {
 	ToggleExpanded() bool
 }
 
+// ThinkingTogglable is implemented by assistant messages that can hide or
+// show their finished thinking block from a command.
+type ThinkingTogglable interface {
+	SetThinkingVisible(bool) bool
+	ThinkingVisible() bool
+}
+
 // KeyEventHandler is an interface for items that can handle key events.
 type KeyEventHandler interface {
 	HandleKeyEvent(key tea.KeyMsg) (bool, tea.Cmd)
@@ -86,6 +93,11 @@ type highlightableMessageItem struct {
 	endLine     int
 	endCol      int
 	highlighter list.Highlighter
+
+	// extraLeftOffset is additional left offset beyond
+	// MessageLeftPaddingTotal, used by items whose RawRender output
+	// has extra framing (e.g. the user-message box border).
+	extraLeftOffset int
 }
 
 var _ list.Highlightable = (*highlightableMessageItem)(nil)
@@ -108,7 +120,7 @@ func (h *highlightableMessageItem) renderHighlighted(content string, width, heig
 func (h *highlightableMessageItem) SetHighlight(startLine int, startCol int, endLine int, endCol int) {
 	// Adjust columns for the style's left inset (border + padding) since we
 	// highlight the content only.
-	offset := MessageLeftPaddingTotal
+	offset := MessageLeftPaddingTotal + h.extraLeftOffset
 	newStartCol := max(0, startCol-offset)
 	newEndCol := endCol
 	if endCol >= 0 {

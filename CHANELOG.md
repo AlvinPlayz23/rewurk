@@ -10,6 +10,13 @@
 - Removed the top compact-header model/provider badge and token percentage because that information now appears in the bottom status area.
 - Removed the `ctrl+d` compact session-details shortcut and the compact session-details overlay screen.
 - Replaced the assistant random/scrambled loading animation with rotating plain status phrases such as `Thinking...`, `Streaming...`, `Ruminating...`, and `Hold on, let me think more...`.
+- Added a subtle rounded box (`UserBox`) around user messages so they are visually grouped and separated from assistant/tool output.
+- Aligned the left edge of the user-message box with assistant messages by removing the extra user prefix indentation.
+- Removed the completed-assistant footer line that showed model, provider, duration, and a horizontal separator after each request.
+- Removed the user-message box background so it no longer looks like the thinking-block highlight on wrapped or multi-line user messages.
+- Limited live thinking/reasoning previews to roughly two lines plus `...` while the assistant is streaming.
+- Added a `/` command, `Toggle Thinking Blocks`, to show or hide completed thinking blocks after a response finishes.
+- Hidden completed thinking blocks now render a compact placeholder instead of the full reasoning body.
 
 Changed files:
 
@@ -20,6 +27,11 @@ Changed files:
 - `internal/ui/model/header.go`
 - `internal/ui/model/keys.go`
 - `internal/ui/chat/assistant.go`
+- `internal/ui/chat/user.go`
+- `internal/ui/chat/messages.go`
+- `internal/ui/model/chat.go`
+- `internal/ui/dialog/actions.go`
+- `internal/ui/dialog/commands.go`
 
 Validation:
 

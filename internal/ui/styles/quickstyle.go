@@ -817,14 +817,19 @@ func quickStyle(o quickStyleOpts) Styles {
 
 	s.Messages.NoContent = lipgloss.NewStyle().Foreground(o.fgBase)
 
+	s.Messages.UserBox = lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(o.bgMostVisible).
+		Padding(0, 1)
+
 	// User avatar prefix.
 	s.Messages.UserBlurred = lipgloss.NewStyle().
 		Foreground(o.primary).
-		SetString("  ")
+		SetString("")
 	s.Messages.UserFocused = lipgloss.NewStyle().
 		Foreground(o.primary).
 		Bold(true).
-		SetString("  ")
+		SetString("")
 
 	// Assistant avatar prefix.
 	s.Messages.AssistantBlurred = lipgloss.NewStyle().

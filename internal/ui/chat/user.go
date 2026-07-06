@@ -36,9 +36,12 @@ type UserMessageItem struct {
 // NewUserMessageItem creates a new UserMessageItem.
 func NewUserMessageItem(sty *styles.Styles, message *message.Message, attachments *attachments.Renderer) MessageItem {
 	v := list.NewVersioned()
+	h := defaultHighlighter(sty, v)
+	box := sty.Messages.UserBox
+	h.extraLeftOffset = box.GetHorizontalFrameSize()/2 - MessageLeftPaddingTotal
 	return &UserMessageItem{
 		Versioned:                v,
-		highlightableMessageItem: defaultHighlighter(sty, v),
+		highlightableMessageItem: h,
 		cachedMessageItem:        &cachedMessageItem{},
 		focusableMessageItem:     newFocusableMessageItem(v),
 		attachments:              attachments,
@@ -57,6 +60,10 @@ func (m *UserMessageItem) Finished() bool {
 func (m *UserMessageItem) RawRender(width int) string {
 	cappedWidth := cappedMessageWidth(width)
 
+	box := m.sty.Messages.UserBox
+	boxFrameWidth := box.GetHorizontalFrameSize()
+	innerWidth := max(0, cappedWidth-boxFrameWidth)
+
 	content, height, ok := m.getCachedRender(cappedWidth)
 	// cache hit
 	if ok {
@@ -67,13 +74,16 @@ func (m *UserMessageItem) RawRender(width int) string {
 
 	// Check if this is a skill invocation (loaded_skill XML)
 	if strings.HasPrefix(msgContent, "<loaded_skill>") {
-		content = m.renderSkillInvocation(msgContent, cappedWidth)
+		content = m.renderSkillInvocation(msgContent, innerWidth)
+		if content != "" {
+			content = box.Width(innerWidth).Render(content)
+		}
 		height = lipgloss.Height(content)
 		m.setCachedRender(content, cappedWidth, height)
 		return m.renderHighlighted(content, cappedWidth, height)
 	}
 
-	renderer := common.MarkdownRenderer(m.sty, cappedWidth)
+	renderer := common.MarkdownRenderer(m.sty, innerWidth)
 	mu := common.LockMarkdownRenderer(renderer)
 
 	mu.Lock()
@@ -87,12 +97,16 @@ func (m *UserMessageItem) RawRender(width int) string {
 	}
 
 	if len(m.message.BinaryContent()) > 0 {
-		attachmentsStr := m.renderAttachments(cappedWidth)
+		attachmentsStr := m.renderAttachments(innerWidth)
 		if content == "" {
 			content = attachmentsStr
 		} else {
 			content = strings.Join([]string{content, "", attachmentsStr}, "\n")
 		}
+	}
+
+	if content != "" {
+		content = box.Width(innerWidth).Render(content)
 	}
 
 	height = lipgloss.Height(content)

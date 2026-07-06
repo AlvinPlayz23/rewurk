@@ -27,8 +27,17 @@ const assistantMessageTruncateFormat = "… (%d lines hidden) [click or space to
 // does not add a new keybinding.
 const assistantMessageTailWindowFormat = "… %d earlier lines hidden [click or space for full view]"
 
-// maxCollapsedThinkingHeight defines the maximum height of the thinking
-const maxCollapsedThinkingHeight = 10
+const (
+	// maxStreamingThinkingLines keeps live reasoning compact while it streams.
+	maxStreamingThinkingLines = 2
+
+	// maxCollapsedThinkingHeight defines the maximum height of the thinking
+	maxCollapsedThinkingHeight = 10
+
+	// maxStreamingThinkingRunes is a fallback for unwrapped source text before
+	// glamour inserts line breaks. It approximates two terminal lines.
+	maxStreamingThinkingRunes = 160
+)
 
 // maxExpandedThinkingTailLines is the F5 tail-window cap. When the user
 // expands a thinking block whose post-glamour line count exceeds this
@@ -138,12 +147,14 @@ type AssistantMessageItem struct {
 	*cachedMessageItem
 	*focusableMessageItem
 
-	message           *message.Message
-	sty               *styles.Styles
-	anim              *anim.Anim
-	statusStep        int
-	thinkingViewMode  thinkingViewMode
-	thinkingBoxHeight int // Tracks the rendered thinking box height for click detection.
+	message                  *message.Message
+	sty                      *styles.Styles
+	anim                     *anim.Anim
+	statusStep               int
+	thinkingVisible          bool
+	thinkingStreamingPreview bool
+	thinkingViewMode         thinkingViewMode
+	thinkingBoxHeight        int // Tracks the rendered thinking box height for click detection.
 
 	// Per-section render caches. Splitting these out means content
 	// streaming does not invalidate the (often expensive) thinking
@@ -179,6 +190,8 @@ func NewAssistantMessageItem(sty *styles.Styles, message *message.Message) Messa
 		focusableMessageItem:     newFocusableMessageItem(v),
 		message:                  message,
 		sty:                      sty,
+		thinkingVisible:          true,
+		thinkingStreamingPreview: message.IsThinking(),
 	}
 
 	a.anim = anim.New(anim.Settings{
@@ -397,7 +410,15 @@ func (a *AssistantMessageItem) thinkingKey() (uint64, uint64) {
 	// the flag bytes and the duration string. The view mode is folded
 	// in so that toggling collapsed ↔ tail-window ↔ full invalidates
 	// only the thinking section, not content/error.
-	extra := fnvFields([]byte{byte(a.thinkingViewMode), footer}, []byte(durationStr))
+	var visible byte
+	if a.thinkingVisible {
+		visible = 1
+	}
+	var streaming byte
+	if a.thinkingStreamingPreview && a.thinkingViewMode == thinkingCollapsed {
+		streaming = 1
+	}
+	extra := fnvFields([]byte{byte(a.thinkingViewMode), footer, visible, streaming}, []byte(durationStr))
 	return srcHash, extra
 }
 
@@ -469,6 +490,11 @@ func (a *AssistantMessageItem) cachedError(width int) string {
 // ThinkingBox style is applied on top of the (already-windowed)
 // lines so the visual box matches what the user sees today.
 func (a *AssistantMessageItem) renderThinking(thinking string, width int) string {
+	if a.message.IsFinished() && !a.thinkingVisible {
+		a.thinkingBoxHeight = 0
+		return a.sty.Messages.ThinkingTruncationHint.Render("Thinking hidden. Use /toggle thinking blocks to show.")
+	}
+
 	renderer := common.QuietMarkdownRenderer(a.sty, width)
 	rendered := a.streamingThinking.Render(thinking, width, renderer)
 	rendered = strings.TrimSpace(rendered)
@@ -476,22 +502,34 @@ func (a *AssistantMessageItem) renderThinking(thinking string, width int) string
 	lines := strings.Split(rendered, "\n")
 	totalLines := len(lines)
 
-	switch a.thinkingViewMode {
-	case thinkingCollapsed:
-		if totalLines > maxCollapsedThinkingHeight {
-			lines = lines[totalLines-maxCollapsedThinkingHeight:]
-			hint := a.sty.Messages.ThinkingTruncationHint.Render(
-				fmt.Sprintf(assistantMessageTruncateFormat, totalLines-maxCollapsedThinkingHeight),
-			)
-			lines = append([]string{hint, ""}, lines...)
+	if a.thinkingStreamingPreview && a.thinkingViewMode == thinkingCollapsed {
+		if totalLines > maxStreamingThinkingLines {
+			lines = append(lines[:maxStreamingThinkingLines], a.sty.Messages.ThinkingTruncationHint.Render("..."))
+		} else if totalLines == 1 {
+			lineRunes := []rune(lines[0])
+			if len(lineRunes) > maxStreamingThinkingRunes {
+				lines[0] = string(lineRunes[:maxStreamingThinkingRunes])
+				lines = append(lines, a.sty.Messages.ThinkingTruncationHint.Render("..."))
+			}
 		}
-	case thinkingTailWindow:
-		if totalLines > maxExpandedThinkingTailLines {
-			lines = lines[totalLines-maxExpandedThinkingTailLines:]
-			hint := a.sty.Messages.ThinkingTruncationHint.Render(
-				fmt.Sprintf(assistantMessageTailWindowFormat, totalLines-maxExpandedThinkingTailLines),
-			)
-			lines = append([]string{hint, ""}, lines...)
+	} else {
+		switch a.thinkingViewMode {
+		case thinkingCollapsed:
+			if totalLines > maxCollapsedThinkingHeight {
+				lines = lines[totalLines-maxCollapsedThinkingHeight:]
+				hint := a.sty.Messages.ThinkingTruncationHint.Render(
+					fmt.Sprintf(assistantMessageTruncateFormat, totalLines-maxCollapsedThinkingHeight),
+				)
+				lines = append([]string{hint, ""}, lines...)
+			}
+		case thinkingTailWindow:
+			if totalLines > maxExpandedThinkingTailLines {
+				lines = lines[totalLines-maxExpandedThinkingTailLines:]
+				hint := a.sty.Messages.ThinkingTruncationHint.Render(
+					fmt.Sprintf(assistantMessageTailWindowFormat, totalLines-maxExpandedThinkingTailLines),
+				)
+				lines = append([]string{hint, ""}, lines...)
+			}
 		}
 	}
 
@@ -564,6 +602,11 @@ func (a *AssistantMessageItem) isSpinning() bool {
 func (a *AssistantMessageItem) SetMessage(msg *message.Message) tea.Cmd {
 	wasSpinning := a.isSpinning()
 	a.message = msg
+	if msg.IsThinking() && a.thinkingViewMode == thinkingCollapsed {
+		a.thinkingStreamingPreview = true
+	} else {
+		a.thinkingStreamingPreview = false
+	}
 	// Bump the F6 version even if the underlying *message.Message
 	// pointer is identical: callers may have mutated the message in
 	// place (delta append) and we cannot tell from here. The
@@ -619,6 +662,10 @@ func (a *AssistantMessageItem) clearCache() {
 // there is nothing to expand, and mutating the view mode would
 // thrash the thinking-section cache key for no visible benefit.
 func (a *AssistantMessageItem) ToggleExpanded() bool {
+	if !a.thinkingVisible {
+		return false
+	}
+	a.thinkingStreamingPreview = false
 	if strings.TrimSpace(a.message.ReasoningContent().Thinking) == "" {
 		return a.thinkingViewMode != thinkingCollapsed
 	}
@@ -642,6 +689,21 @@ func (a *AssistantMessageItem) ToggleExpanded() bool {
 	a.streamingThinking.Reset()
 	a.Bump()
 	return a.thinkingViewMode != thinkingCollapsed
+}
+
+func (a *AssistantMessageItem) SetThinkingVisible(visible bool) bool {
+	if a.thinkingVisible == visible {
+		return false
+	}
+	a.thinkingVisible = visible
+	a.thinkingSec.reset()
+	a.cachedMessageItem.prefixedRendered = ""
+	a.Bump()
+	return true
+}
+
+func (a *AssistantMessageItem) ThinkingVisible() bool {
+	return a.thinkingVisible
 }
 
 // tailWindowWouldTruncate reports whether the current thinking text

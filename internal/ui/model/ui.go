@@ -244,6 +244,7 @@ type UI struct {
 
 	readyPlaceholder   string
 	workingPlaceholder string
+	showThinkingBlocks bool
 
 	// Completions state
 	completions              *completions.Completions
@@ -379,6 +380,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 		initialSessionID:    initialSessionID,
 		continueLastSession: continueLast,
 		skillStates:         skills.GetLatestStates(),
+		showThinkingBlocks:  false,
 	}
 
 	status := NewStatus(com, ui)
@@ -1133,11 +1135,9 @@ func (m *UI) setSessionMessages(msgs []message.Message) tea.Cmd {
 			m.lastUserMessageTime = msg.CreatedAt
 			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
 		case message.Assistant:
-			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
-			if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
-				infoItem := chat.NewAssistantInfoItem(m.com.Styles, msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-				items = append(items, infoItem)
-			}
+			msgItems := chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)
+			m.applyThinkingBlockVisibility(msgItems)
+			items = append(items, msgItems...)
 		default:
 			items = append(items, chat.ExtractMessageItems(m.com.Styles, msg, toolResultMap)...)
 		}
@@ -1264,6 +1264,7 @@ func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
 		}
 	case message.Assistant:
 		items := chat.ExtractMessageItems(m.com.Styles, &msg, nil)
+		m.applyThinkingBlockVisibility(items)
 		for _, item := range items {
 			if animatable, ok := item.(chat.Animatable); ok {
 				if cmd := animatable.StartAnimation(); cmd != nil {
@@ -1275,15 +1276,6 @@ func (m *UI) appendSessionMessage(msg message.Message) tea.Cmd {
 		if m.chat.Follow() {
 			if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
 				cmds = append(cmds, cmd)
-			}
-		}
-		if msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn {
-			infoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-			m.chat.AppendMessages(infoItem)
-			if m.chat.Follow() {
-				if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
-					cmds = append(cmds, cmd)
-				}
 			}
 		}
 	case message.Tool:
@@ -1339,25 +1331,10 @@ func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
 	}
 
 	shouldRenderAssistant := chat.ShouldRenderAssistantMessage(&msg)
-	isEndTurn := msg.FinishPart() != nil && msg.FinishPart().Reason == message.FinishReasonEndTurn
 	// If the message of the assistant does not have any response just tool
-	// calls we need to remove it, but keep the info item for end-of-turn
-	// renders so the footer (model/provider/duration) remains visible when,
-	// for example, a hook halts the turn.
+	// calls we need to remove it.
 	if !shouldRenderAssistant && len(msg.ToolCalls()) > 0 && existingItem != nil {
 		m.chat.RemoveMessage(msg.ID)
-		if !isEndTurn {
-			if infoItem := m.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem != nil {
-				m.chat.RemoveMessage(chat.AssistantInfoID(msg.ID))
-			}
-		}
-	}
-
-	if isEndTurn {
-		if infoItem := m.chat.MessageItem(chat.AssistantInfoID(msg.ID)); infoItem == nil {
-			newInfoItem := chat.NewAssistantInfoItem(m.com.Styles, &msg, m.com.Config(), time.Unix(m.lastUserMessageTime, 0))
-			m.chat.AppendMessages(newInfoItem)
-		}
 	}
 
 	var items []chat.MessageItem
@@ -1393,6 +1370,14 @@ func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
 	}
 
 	return tea.Sequence(cmds...)
+}
+
+func (m *UI) applyThinkingBlockVisibility(items []chat.MessageItem) {
+	for _, item := range items {
+		if togglable, ok := item.(chat.ThinkingTogglable); ok {
+			togglable.SetThinkingVisible(m.showThinkingBlocks)
+		}
+	}
 }
 
 // handleChildSessionMessage handles messages from child sessions (agent tools).
@@ -1623,6 +1608,19 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			}
 			return util.NewInfoMsg("Thinking mode " + status)
 		})
+		m.dialog.CloseDialog(dialog.CommandsID)
+	case dialog.ActionToggleThinkingBlocks:
+		m.showThinkingBlocks = !m.showThinkingBlocks
+		changed := m.chat.SetThinkingBlocksVisible(m.showThinkingBlocks)
+		status := "hidden"
+		if m.showThinkingBlocks {
+			status = "visible"
+		}
+		if !changed {
+			cmds = append(cmds, util.ReportInfo("Thinking blocks already "+status))
+		} else {
+			cmds = append(cmds, util.ReportInfo("Thinking blocks "+status))
+		}
 		m.dialog.CloseDialog(dialog.CommandsID)
 	case dialog.ActionToggleTransparentBackground:
 		cmds = append(cmds, func() tea.Msg {

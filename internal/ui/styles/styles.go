@@ -262,6 +262,8 @@ type Styles struct {
 		ToolCallBlurred  lipgloss.Style
 
 		// Shell (bang mode) item styles.
+		// UserBox is a subtle rounded box around user messages.
+		UserBox            lipgloss.Style
 		ShellBarFocused    lipgloss.Style // Left vertical bar when focused.
 		ShellBarBlurred    lipgloss.Style // Left vertical bar when blurred.
 		ShellPrompt        lipgloss.Style // "$" prompt symbol (focused).

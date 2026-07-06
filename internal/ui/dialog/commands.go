@@ -510,6 +510,10 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		}
 		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_pills", label, "ctrl+t", ActionTogglePills{}))
 	}
+	if c.hasSession {
+		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking_blocks", "Toggle Thinking Blocks", "", ActionToggleThinkingBlocks{}).
+			WithAliases("reasoning thoughts show hide collapse expand"))
+	}
 
 	// Add a command for selecting notification style via picker dialog.
 	notificationLabel := "Notification Style"
