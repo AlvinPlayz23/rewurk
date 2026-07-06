@@ -447,7 +447,7 @@ func TestE2E_PermissionFlowCrossClient(t *testing.T) {
 		granted, err := h.app.Permissions.Request(ctx, permission.CreatePermissionRequest{
 			SessionID:   sessionID,
 			ToolCallID:  toolCallID,
-			ToolName:    "view",
+			ToolName:    "read",
 			Description: "read a file",
 			Action:      "read",
 			Path:        h.workspace.Path,

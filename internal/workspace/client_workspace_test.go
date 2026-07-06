@@ -31,7 +31,7 @@ func TestProtoToMessageToolResult(t *testing.T) {
 		Parts: []proto.ContentPart{
 			proto.ToolResult{
 				ToolCallID: "call-1",
-				Name:       "view",
+				Name:       "read",
 				Content:    "<file>\n  1| hi\n</file>",
 				Data:       "base64data",
 				MIMEType:   "image/png",
@@ -46,7 +46,7 @@ func TestProtoToMessageToolResult(t *testing.T) {
 	tr, ok := got.Parts[0].(message.ToolResult)
 	require.True(t, ok, "expected message.ToolResult, got %T", got.Parts[0])
 	require.Equal(t, "call-1", tr.ToolCallID)
-	require.Equal(t, "view", tr.Name)
+	require.Equal(t, "read", tr.Name)
 	require.Equal(t, "<file>\n  1| hi\n</file>", tr.Content)
 	require.Equal(t, "base64data", tr.Data)
 	require.Equal(t, "image/png", tr.MIMEType)

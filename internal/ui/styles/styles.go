@@ -122,7 +122,8 @@ type Styles struct {
 
 	// Editor
 	Editor struct {
-		Textarea textarea.Styles
+		Textarea  textarea.Styles
+		PromptBox lipgloss.Style
 
 		// Normal mode prompt.
 		PromptNormalFocused lipgloss.Style

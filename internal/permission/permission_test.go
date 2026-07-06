@@ -20,7 +20,7 @@ func TestPermissionService_AllowedCommands(t *testing.T) {
 	}{
 		{
 			name:         "tool in allowlist",
-			allowedTools: []string{"bash", "view"},
+			allowedTools: []string{"bash", "read"},
 			toolName:     "bash",
 			action:       "execute",
 			expected:     true,
@@ -34,7 +34,7 @@ func TestPermissionService_AllowedCommands(t *testing.T) {
 		},
 		{
 			name:         "tool not in allowlist",
-			allowedTools: []string{"view", "ls"},
+			allowedTools: []string{"read", "ls"},
 			toolName:     "bash",
 			action:       "execute",
 			expected:     false,
@@ -177,7 +177,7 @@ func TestPermissionService_HookApproval(t *testing.T) {
 		granted, err := service.Request(ctx, CreatePermissionRequest{
 			SessionID:  "s1",
 			ToolCallID: "call-99",
-			ToolName:   "view",
+			ToolName:   "read",
 			Action:     "read",
 			Path:       "/tmp",
 		})

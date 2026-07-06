@@ -14,9 +14,7 @@ import (
 	"charm.land/log/v2"
 	"github.com/charmbracelet/crush/internal/client"
 	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/event"
 	"github.com/charmbracelet/crush/internal/format"
-	"github.com/charmbracelet/crush/internal/herdr"
 	"github.com/charmbracelet/crush/internal/proto"
 	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/charmbracelet/crush/internal/session"
@@ -88,23 +86,12 @@ crush run --continue "Follow up on your last response"
 			return fmt.Errorf("no prompt provided")
 		}
 
-		event.SetNonInteractive(true)
-
-		switch {
-		case sessionID != "":
-			event.SetContinueBySessionID(true)
-		case useLast:
-			event.SetContinueLastSession(true)
-		}
-
 		if useClientServer() {
 			c, ws, cleanup, err := connectToServer(cmd)
 			if err != nil {
 				return err
 			}
 			defer cleanup()
-
-			event.AppInitialized()
 
 			if sessionID != "" {
 				sess, err := resolveSessionByID(ctx, c, ws.ID, sessionID)
@@ -130,8 +117,6 @@ crush run --continue "Follow up on your last response"
 			return err
 		}
 		defer cleanup()
-
-		event.AppInitialized()
 
 		if !ws.Config().IsConfigured() {
 			return fmt.Errorf("no providers configured - please run 'crush' to set up a provider interactively")
@@ -263,11 +248,6 @@ func runNonInteractive(
 		read:      make(map[string]int),
 	}
 
-	// Start herdr integration when running inside a herdr pane.
-	hc := herdr.Init()
-	hc.SetSessionID(sess.ID)
-	defer hc.Close()
-
 	defer func() {
 		if progress && stderrTTY {
 			_, _ = fmt.Fprintf(os.Stderr, ansi.ResetProgressBar)
@@ -285,11 +265,6 @@ func runNonInteractive(
 			if !ok {
 				stopSpinner()
 				return nil
-			}
-
-			// Forward events to herdr if running inside a herdr pane.
-			if hev := herdr.Translate(ev); hev != nil {
-				hc.HandleEvent(hev)
 			}
 
 			done, err := stream.handle(ev, stopSpinner)

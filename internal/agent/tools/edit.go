@@ -216,7 +216,7 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 
 	lastRead := edit.filetracker.LastReadTime(edit.ctx, sessionID, filePath)
 	if lastRead.IsZero() {
-		return fantasy.NewTextErrorResponse("you must read the file before editing it. Use the View tool first"), nil
+		return fantasy.NewTextErrorResponse("you must read the file before editing it. Use the Read tool first"), nil
 	}
 
 	modTime := fileInfo.ModTime().Truncate(time.Second)
@@ -357,7 +357,7 @@ func replaceContent(edit editContext, filePath, oldString, newString string, rep
 
 	lastRead := edit.filetracker.LastReadTime(edit.ctx, sessionID, filePath)
 	if lastRead.IsZero() {
-		return fantasy.NewTextErrorResponse("you must read the file before editing it. Use the View tool first"), nil
+		return fantasy.NewTextErrorResponse("you must read the file before editing it. Use the Read tool first"), nil
 	}
 
 	modTime := fileInfo.ModTime().Truncate(time.Second)

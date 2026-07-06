@@ -27,6 +27,7 @@ type Opts struct {
 	VersionColor color.Color // version text color
 	Width        int         // width of the rendered logo, used for truncation
 	Hyper        bool        // whether it is Crush or Hypercrush
+	HideField    bool        // hide the diagonal line fields around the title
 
 	// When true, stretch a random letterform on each render. Has no effect in
 	// compact mode. Mainly for testing. In production you will want to cache
@@ -108,6 +109,9 @@ func Render(base lipgloss.Style, version string, compact bool, o Opts) string {
 	if compact {
 		field := fg(o.FieldColor, strings.Repeat(diag, crushWidth))
 		return strings.Join([]string{field, field, crush, field, ""}, "\n")
+	}
+	if o.HideField {
+		return lipgloss.NewStyle().Width(o.Width).Align(lipgloss.Center).Render(crush)
 	}
 
 	fieldHeight := lipgloss.Height(crush)

@@ -1350,7 +1350,7 @@ func (t *baseToolMessageItem) formatBashResultForCopy() string {
 	return fmt.Sprintf("```bash\n%s\n```", output)
 }
 
-// formatViewResultForCopy formats view tool results for clipboard.
+// formatViewResultForCopy formats read tool results for clipboard.
 func (t *baseToolMessageItem) formatViewResultForCopy() string {
 	if t.result == nil {
 		return ""
@@ -1669,7 +1669,7 @@ func prettifyToolName(name string) string {
 	case tools.TodosToolName:
 		return "To-Do"
 	case tools.ViewToolName:
-		return "View"
+		return "Read"
 	case tools.WriteToolName:
 		return "Write"
 	default:

@@ -60,6 +60,7 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/charmbracelet/ultraviolet/screen"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/editor"
 	xstrings "github.com/charmbracelet/x/exp/strings"
 )
@@ -2509,7 +2510,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		}
 		if m.textarea.Focused() {
 			cur := m.textarea.Cursor()
-			cur.X += m.layout.editor.Min.X     // Offset by editor position
+			cur.X += m.layout.editor.Min.X + 1 // Offset by editor position and prompt box padding.
 			cur.Y += m.layout.editor.Min.Y + 1 // Offset for attachments row
 			return cur
 		}
@@ -2858,7 +2859,7 @@ func (m *UI) updateSize() {
 
 	m.chat.SetSize(m.layout.main.Dx(), m.layout.main.Dy())
 	m.textarea.MaxHeight = TextareaMaxHeight
-	m.textarea.SetWidth(m.layout.editor.Dx())
+	m.textarea.SetWidth(max(0, m.layout.editor.Dx()-m.com.Styles.Editor.PromptBox.GetHorizontalFrameSize()))
 	m.renderPills()
 
 	// Handle different app states
@@ -2879,7 +2880,7 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	// The help height
 	helpHeight := 1
 	// The editor height: textarea height + margin for attachments and bottom spacing.
-	editorHeight := m.textarea.Height() + editorHeightMargin
+	editorHeight := m.textarea.Height() + editorHeightMargin + m.com.Styles.Editor.PromptBox.GetVerticalFrameSize()
 	// The sidebar width
 	sidebarWidth := 30
 	// The header height
@@ -3144,9 +3145,9 @@ func (m *UI) normalPromptFunc(info textarea.PromptInfo) string {
 	t := m.com.Styles
 	if info.LineNumber == 0 {
 		if info.Focused {
-			return "  > "
+			return t.Editor.Textarea.Focused.Prompt.Render("  > ")
 		}
-		return "    "
+		return t.Editor.Textarea.Blurred.Prompt.Render("    ")
 	}
 	if info.Focused {
 		return t.Editor.PromptNormalFocused.Render()
@@ -3319,7 +3320,7 @@ func (m *UI) completionsPosition() image.Point {
 		}
 	}
 	return image.Point{
-		X: cur.X + m.layout.editor.Min.X,
+		X: cur.X + m.layout.editor.Min.X + 1,
 		Y: m.layout.editor.Min.Y + cur.Y,
 	}
 }
@@ -3389,23 +3390,18 @@ func (m *UI) chatIsEmpty() bool {
 }
 
 // renderEmptyStateContent builds the ChatGPT-style greeting block shown above
-// the centered prompt when there are no messages yet: logo, welcome text,
-// working directory, model info, and LSP/MCP status.
+// the centered prompt when there are no messages yet: logo, working directory,
+// model info, and LSP/MCP status.
 func (m *UI) renderEmptyStateContent(width int) string {
 	t := m.com.Styles
 
 	// Logo.
-	logoStr := renderLogo(t, false, m.com.IsHyper(), width)
-
-	// Welcome message.
-	welcome := lipgloss.NewStyle().
-		Foreground(t.Logo.TitleColorA).
-		Render("How can I help?")
+	logoStr := renderHomeLogo(t, m.com.IsHyper(), width)
 
 	// The remaining lines require workspace/config access. Guard against a
-	// nil workspace (e.g. in unit tests) and show just the logo + welcome.
+	// nil workspace (e.g. in unit tests) and show just the logo.
 	if m.com.Workspace == nil {
-		return lipgloss.JoinVertical(lipgloss.Center, logoStr, "", welcome)
+		return logoStr
 	}
 
 	// Working directory.
@@ -3447,8 +3443,6 @@ func (m *UI) renderEmptyStateContent(width int) string {
 	return lipgloss.JoinVertical(lipgloss.Center,
 		logoStr,
 		"",
-		welcome,
-		"",
 		cwd,
 		"",
 		modelLine,
@@ -3487,7 +3481,7 @@ const maxEmptyEditorWidth = 80
 // greeting sits directly above the prompt box, and the prompt box is a
 // centered, width-capped column.
 func (m *UI) emptyStateLayout(area image.Rectangle, base uiLayout) uiLayout {
-	editorHeight := m.textarea.Height() + editorHeightMargin
+	editorHeight := m.textarea.Height() + editorHeightMargin + m.com.Styles.Editor.PromptBox.GetVerticalFrameSize()
 	contentHeight := lipgloss.Height(m.renderEmptyStateContent(area.Dx()))
 	const gap = 1
 
@@ -3540,14 +3534,34 @@ func (m *UI) randomizePlaceholders() {
 // renderEditorView renders the editor view with attachments if any.
 func (m *UI) renderEditorView(width int) string {
 	var attachmentsView string
+	innerWidth := max(0, width-m.com.Styles.Editor.PromptBox.GetHorizontalFrameSize())
 	if len(m.attachments.List()) > 0 {
-		attachmentsView = m.attachments.Render(width)
+		attachmentsView = m.attachments.Render(innerWidth)
 	}
-	return strings.Join([]string{
+	view := strings.Join([]string{
 		attachmentsView,
-		m.textarea.View(),
+		m.renderTextareaView(innerWidth),
 		"", // margin at bottom of editor
 	}, "\n")
+	return m.com.Styles.Editor.PromptBox.Width(width).Render(view)
+}
+
+// renderTextareaView keeps empty textarea rows on the prompt surface. The
+// textarea only emits cells for visible text, so blank rows need their own
+// highlighted fill to avoid holes in the prompt box.
+func (m *UI) renderTextareaView(width int) string {
+	style := m.com.Styles.Editor.Textarea.Blurred.Base
+	if m.textarea.Focused() {
+		style = m.com.Styles.Editor.Textarea.Focused.Base
+	}
+	fill := style.Width(width).Render("")
+	lines := strings.Split(m.textarea.View(), "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(ansi.Strip(line)) == "" {
+			lines[i] = fill
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // cacheSidebarLogo renders and caches the sidebar logo at the specified width.
@@ -4416,5 +4430,20 @@ func renderLogo(t *styles.Styles, compact, hyper bool, width int) string {
 		VersionColor: t.Logo.VersionColor,
 		Width:        width,
 		Hyper:        hyper,
+	})
+}
+
+// renderHomeLogo renders the centered landing-page wordmark without the
+// diagonal fields used by the header/sidebar logo.
+func renderHomeLogo(t *styles.Styles, hyper bool, width int) string {
+	return logo.Render(t.Logo.GradCanvas, version.Version, false, logo.Opts{
+		FieldColor:   t.Logo.FieldColor,
+		TitleColorA:  t.Logo.TitleColorA,
+		TitleColorB:  t.Logo.TitleColorB,
+		CharmColor:   t.Logo.CharmColor,
+		VersionColor: t.Logo.VersionColor,
+		Width:        width,
+		Hyper:        hyper,
+		HideField:    true,
 	})
 }

@@ -153,7 +153,7 @@ When using edit tools:
 7. Run tests
 
 **Whitespace matters**:
-- Count spaces/tabs carefully (use View tool line numbers as reference)
+- Count spaces/tabs carefully (use Read tool line numbers as reference)
 - Include blank lines if they exist
 - Match line endings exactly
 - When in doubt, include MORE context rather than less
@@ -382,13 +382,13 @@ The `<description>` of each skill is a TRIGGER — it tells you *when* a skill a
 
 MANDATORY activation flow:
 1. Scan `<available_skills>` against the current user task.
-2. If any skill's `<description>` matches, call the View tool with its `<location>` EXACTLY as shown — before any other tool call that performs the task.
+2. If any skill's `<description>` matches, call the Read tool with its `<location>` EXACTLY as shown — before any other tool call that performs the task.
 3. Read the entire SKILL.md and follow its instructions.
 4. Only then execute the task, using the skill's prescribed commands/tools.
 
 Do NOT skip step 2 because you think you already know how to do the task. Do NOT infer a skill's behavior from its name or description. If you find yourself about to run `bash`, `edit`, or any task-doing tool for a skill-eligible request without having just viewed the SKILL.md, stop and load the skill first.
 
-Builtin skills (type=builtin) use virtual `crush://skills/...` location identifiers. The "crush://" prefix is NOT a URL, network address, or MCP resource — it is a special internal identifier the View tool understands natively. Pass the `<location>` verbatim to View.
+Builtin skills (type=builtin) use virtual `crush://skills/...` location identifiers. The "crush://" prefix is NOT a URL, network address, or MCP resource — it is a special internal identifier the Read tool understands natively. Pass the `<location>` verbatim to Read.
 
 Do not use MCP tools (including read_mcp_resource) to load skills.
 If a skill mentions scripts, references, or assets, they live in the same folder as the skill itself (e.g., scripts/, references/, assets/ subdirectories within the skill's folder).

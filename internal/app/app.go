@@ -24,10 +24,8 @@ import (
 	"github.com/charmbracelet/crush/internal/clipboard"
 	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/event"
 	"github.com/charmbracelet/crush/internal/filetracker"
 	"github.com/charmbracelet/crush/internal/format"
-	"github.com/charmbracelet/crush/internal/herdr"
 	"github.com/charmbracelet/crush/internal/history"
 	"github.com/charmbracelet/crush/internal/log"
 	"github.com/charmbracelet/crush/internal/lsp"
@@ -84,10 +82,6 @@ type App struct {
 	// drive their exit on a deterministic, payload-bearing event
 	// instead of guessing from message finish parts.
 	runCompletions *pubsub.Broker[notify.RunComplete]
-
-	// herdrClient reports agent state to herdr when running inside
-	// a herdr-managed pane. Nil when not in a herdr environment.
-	herdrClient *herdr.Client
 }
 
 // New initializes a new application instance. skillsMgr carries the
@@ -138,15 +132,6 @@ func New(ctx context.Context, conn *sql.DB, store *config.ConfigStore, skillsMgr
 	go app.checkForUpdates(ctx)
 
 	go mcp.Initialize(ctx, app.Permissions, store)
-
-	// Start herdr integration when running inside a herdr pane.
-	app.herdrClient = herdr.Init()
-	herdr.BridgeLocal(ctx, app.herdrClient, herdr.BridgeSources{
-		PermRequests:      app.Permissions,
-		PermNotifications: app.Permissions,
-		RunCompletions:    app.runCompletions,
-		Messages:          app.Messages,
-	})
 
 	// Release the shared database connection on shutdown. The pool
 	// closes the underlying *sql.DB when the last reference is released.
@@ -212,15 +197,6 @@ func (app *App) AgentNotifications() *pubsub.Broker[notify.Notification] {
 // coordinator could publish one of its own.
 func (app *App) RunCompletions() *pubsub.Broker[notify.RunComplete] {
 	return app.runCompletions
-}
-
-// ReportCurrentSession tells herdr which session the user is now
-// viewing so it can persist a resumable reference for the pane. Safe
-// to call when not running inside a herdr pane; the underlying client
-// is nil-safe. Call this whenever the active session changes (load,
-// new, or select).
-func (app *App) ReportCurrentSession(sessionID string) {
-	app.herdrClient.SetSessionID(sessionID)
 }
 
 // resolveSession resolves which session to use for a non-interactive run
@@ -338,9 +314,6 @@ func (app *App) RunNonInteractive(ctx context.Context, output io.Writer, prompt,
 	// Automatically approve all permission requests for this non-interactive
 	// session.
 	app.Permissions.AutoApproveSession(sess.ID)
-
-	// Report session identity to herdr.
-	app.ReportCurrentSession(sess.ID)
 
 	type response struct {
 		result *fantasy.AgentResult
@@ -693,18 +666,10 @@ func (app *App) Shutdown() {
 	// Now run remaining cleanup tasks in parallel.
 	var wg sync.WaitGroup
 
-	// Send exit event
-	wg.Go(func() {
-		event.AppExited()
-	})
-
 	// Kill all background shells.
 	wg.Go(func() {
 		shell.GetBackgroundShellManager().KillAll(shutdownCtx)
 	})
-
-	// Close herdr client to stop its background writer.
-	app.herdrClient.Close()
 
 	// Shutdown all LSP clients.
 	wg.Go(func() {

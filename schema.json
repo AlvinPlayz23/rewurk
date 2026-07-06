@@ -543,7 +543,7 @@
             "type": "string",
             "examples": [
               "bash",
-              "view"
+              "read"
             ]
           },
           "type": "array",

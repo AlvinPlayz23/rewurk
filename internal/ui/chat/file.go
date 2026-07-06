@@ -12,10 +12,10 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-// View Tool
+// Read Tool
 // -----------------------------------------------------------------------------
 
-// ViewToolMessageItem is a message item that represents a view tool call.
+// ViewToolMessageItem is a message item that represents a read tool call.
 type ViewToolMessageItem struct {
 	*baseToolMessageItem
 }
@@ -32,14 +32,14 @@ func NewViewToolMessageItem(
 	return newBaseToolMessageItem(sty, toolCall, result, &ViewToolRenderContext{}, canceled)
 }
 
-// ViewToolRenderContext renders view tool messages.
+// ViewToolRenderContext renders read tool messages.
 type ViewToolRenderContext struct{}
 
 // RenderTool implements the [ToolRenderer] interface.
 func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
 	cappedWidth := cappedMessageWidth(width)
 	if opts.IsPending() {
-		return pendingTool(sty, "View", opts.Anim, opts.Compact)
+		return pendingTool(sty, "Read", opts.Anim, opts.Compact)
 	}
 
 	var params tools.ViewParams
@@ -56,7 +56,7 @@ func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 		toolParams = append(toolParams, "offset", fmt.Sprintf("%d", params.Offset))
 	}
 
-	header := toolHeader(sty, opts.Status, "View", cappedWidth, opts, toolParams...)
+	header := toolHeader(sty, opts.Status, "Read", cappedWidth, opts, toolParams...)
 	if opts.Compact {
 		return header
 	}

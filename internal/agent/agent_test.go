@@ -794,7 +794,7 @@ func TestPreparePrompt_OrphanedToolUseMixed(t *testing.T) {
 		Parts: []message.ContentPart{
 			message.ToolCall{
 				ID:       "call_ok",
-				Name:     "view",
+				Name:     "read",
 				Input:    `{"path":"/foo"}`,
 				Finished: true,
 			},
@@ -814,7 +814,7 @@ func TestPreparePrompt_OrphanedToolUseMixed(t *testing.T) {
 		Parts: []message.ContentPart{
 			message.ToolResult{
 				ToolCallID: "call_ok",
-				Name:       "view",
+				Name:       "read",
 				Content:    "file contents",
 			},
 		},

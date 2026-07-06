@@ -71,12 +71,8 @@ func (w *AppWorkspace) ParseAgentToolSessionID(sessionID string) (string, string
 	return w.app.Sessions.ParseAgentToolSessionID(sessionID)
 }
 
-// SetCurrentSession reports the active session to herdr so the pane
-// can persist a resumable reference. Multi-client presence tracking
-// is irrelevant in single-client local mode, but herdr still needs
-// to know which session is live to support agent resume.
+// SetCurrentSession is a no-op in local mode.
 func (w *AppWorkspace) SetCurrentSession(ctx context.Context, sessionID string) error {
-	w.app.ReportCurrentSession(sessionID)
 	return nil
 }
 

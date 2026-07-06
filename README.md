@@ -452,7 +452,7 @@ permissions. Use this with care.
   "$schema": "https://charm.land/crush.json",
   "permissions": {
     "allowed_tools": [
-      "view",
+      "read",
       "ls",
       "grep",
       "edit",

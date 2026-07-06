@@ -63,7 +63,7 @@ func openInLSPs(
 
 // waitForLSPDiagnostics waits briefly for diagnostics publication after a file
 // has been opened. Intended for read-only situations where viewing up-to-date
-// files matters but latency should remain low (i.e. when using the view tool).
+// files matters but latency should remain low (i.e. when using the read tool).
 func waitForLSPDiagnostics(
 	ctx context.Context,
 	manager *lsp.Manager,

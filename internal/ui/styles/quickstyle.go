@@ -129,22 +129,22 @@ func quickStyle(o quickStyleOpts) Styles {
 
 	s.Editor.Textarea = textarea.Styles{
 		Focused: textarea.StyleState{
-			Base:             base,
-			Text:             base,
-			LineNumber:       base.Foreground(o.fgMostSubtle),
-			CursorLine:       base,
-			CursorLineNumber: base.Foreground(o.fgMostSubtle),
-			Placeholder:      base.Foreground(o.fgMostSubtle),
-			Prompt:           base.Foreground(o.accent),
+			Base:             base.Background(o.bgLeastVisible),
+			Text:             base.Background(o.bgLeastVisible),
+			LineNumber:       base.Foreground(o.fgMostSubtle).Background(o.bgLeastVisible),
+			CursorLine:       base.Background(o.bgLeastVisible),
+			CursorLineNumber: base.Foreground(o.fgMostSubtle).Background(o.bgLeastVisible),
+			Placeholder:      base.Foreground(o.fgMostSubtle).Background(o.bgLeastVisible),
+			Prompt:           base.Foreground(o.accent).Background(o.bgLeastVisible),
 		},
 		Blurred: textarea.StyleState{
-			Base:             base,
-			Text:             base.Foreground(o.fgMoreSubtle),
-			LineNumber:       base.Foreground(o.fgMoreSubtle),
-			CursorLine:       base,
-			CursorLineNumber: base.Foreground(o.fgMoreSubtle),
-			Placeholder:      base.Foreground(o.fgMostSubtle),
-			Prompt:           base.Foreground(o.fgMoreSubtle),
+			Base:             base.Background(o.bgLeastVisible),
+			Text:             base.Foreground(o.fgMoreSubtle).Background(o.bgLeastVisible),
+			LineNumber:       base.Foreground(o.fgMoreSubtle).Background(o.bgLeastVisible),
+			CursorLine:       base.Background(o.bgLeastVisible),
+			CursorLineNumber: base.Foreground(o.fgMoreSubtle).Background(o.bgLeastVisible),
+			Placeholder:      base.Foreground(o.fgMostSubtle).Background(o.bgLeastVisible),
+			Prompt:           base.Foreground(o.fgMoreSubtle).Background(o.bgLeastVisible),
 		},
 		Cursor: textarea.CursorStyle{
 			Color: o.secondary,
@@ -723,7 +723,11 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Button.Blurred = lipgloss.NewStyle().Foreground(o.fgBase).Background(o.bgLessVisible)
 
 	// Editor
-	s.Editor.PromptNormalFocused = lipgloss.NewStyle().Foreground(o.successMostSubtle).SetString("    ")
+	s.Editor.PromptBox = lipgloss.NewStyle().Background(o.bgLeastVisible).Padding(0, 1)
+	s.Editor.PromptNormalFocused = lipgloss.NewStyle().
+		Foreground(o.successMostSubtle).
+		Background(o.bgLeastVisible).
+		SetString("    ")
 	s.Editor.PromptNormalBlurred = s.Editor.PromptNormalFocused.Foreground(o.fgMoreSubtle)
 	s.Editor.PromptYoloIconFocused = lipgloss.NewStyle().MarginRight(1).Foreground(o.fgMostSubtle).Background(o.busy).Bold(true).SetString(" Y ")
 	s.Editor.PromptYoloIconBlurred = s.Editor.PromptYoloIconFocused.Foreground(o.bgBase).Background(o.fgMoreSubtle)

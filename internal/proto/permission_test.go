@@ -102,7 +102,7 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 			},
 		},
 		{
-			name:     "view",
+			name:     "read",
 			toolName: tools.ViewToolName,
 			params: tools.ViewPermissionsParams{
 				FilePath: "/tmp/x.go",

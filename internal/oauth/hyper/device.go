@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/event"
 	"github.com/charmbracelet/crush/internal/oauth"
 )
 
@@ -98,13 +97,12 @@ func PollForToken(ctx context.Context, deviceCode string, expiresIn int) (string
 			return "", ctx.Err()
 		case <-ticker.C:
 			result, err := pollOnce(ctx, deviceCode)
-			if err != nil {
-				return "", err
-			}
-			if result.RefreshToken != "" {
-				event.Alias(result.UserID)
-				return result.RefreshToken, nil
-			}
+		if err != nil {
+			return "", err
+		}
+		if result.RefreshToken != "" {
+			return result.RefreshToken, nil
+		}
 			switch result.Error {
 			case "authorization_pending":
 				continue
