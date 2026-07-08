@@ -122,23 +122,22 @@ func (d *DockerMCPToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if tool == "mcp-find" {
-		return joinToolParts(header, d.renderMCPServers(sty, opts, cappedWidth))
+		return joinToolParts(sty, header, d.renderMCPServers(sty, opts, cappedWidth))
 	}
 
 	if !opts.HasResult() {
 		return header
 	}
 
-	bodyWidth := cappedWidth - toolBodyLeftPaddingTotal
 	var parts []string
 
 	// Handle text content.
 	if opts.Result.Content != "" {
-		body := renderToolResultTextContent(sty, opts.Result.Content, toolResultContentWidths{Body: bodyWidth, Diff: cappedWidth}, opts.ExpandedContent)
+		body := renderToolResultTextContent(sty, opts.Result.Content, toolResultContentWidths{Body: cappedWidth, Diff: cappedWidth}, opts.ExpandedContent)
 		parts = append(parts, body)
 	}
 
@@ -151,7 +150,7 @@ func (d *DockerMCPToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 		return header
 	}
 
-	return joinToolParts(header, strings.Join(parts, "\n"))
+	return joinToolParts(sty, header, strings.Join(parts, "\n"))
 }
 
 // FindMCPResponse represents the response from mcp-find.
@@ -169,14 +168,14 @@ func (d *DockerMCPToolRenderContext) renderMCPServers(sty *styles.Styles, opts *
 
 	var result FindMCPResponse
 	if err := json.Unmarshal([]byte(opts.Result.Content), &result); err != nil {
-		return toolOutputPlainContent(sty, opts.Result.Content, width-toolBodyLeftPaddingTotal, opts.ExpandedContent)
+		return toolOutputPlainContent(sty, opts.Result.Content, max(1, width-toolBodyLeftPaddingTotal), opts.ExpandedContent)
 	}
 
 	if len(result.Servers) == 0 {
 		return sty.Tool.ResultEmpty.Render("No MCP servers found.")
 	}
 
-	bodyWidth := min(120, width) - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, min(120, width)-toolBodyLeftPaddingTotal)
 	rows := [][]string{}
 	moreServers := ""
 	for i, server := range result.Servers {

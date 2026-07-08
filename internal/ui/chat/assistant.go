@@ -490,9 +490,9 @@ func (a *AssistantMessageItem) cachedError(width int) string {
 // ThinkingBox style is applied on top of the (already-windowed)
 // lines so the visual box matches what the user sees today.
 func (a *AssistantMessageItem) renderThinking(thinking string, width int) string {
-	if a.message.IsFinished() && !a.thinkingVisible {
+	if !a.thinkingVisible {
 		a.thinkingBoxHeight = 0
-		return a.sty.Messages.ThinkingTruncationHint.Render("Thinking hidden. Use /toggle thinking blocks to show.")
+		return a.renderHiddenThinking()
 	}
 
 	renderer := common.QuietMarkdownRenderer(a.sty, width)
@@ -552,6 +552,15 @@ func (a *AssistantMessageItem) renderThinking(thinking string, width int) string
 	}
 
 	return result
+}
+
+func (a *AssistantMessageItem) renderHiddenThinking() string {
+	duration := a.message.ThinkingDuration()
+	if duration.String() == "0s" {
+		return a.sty.Messages.ThinkingFooterTitle.Render("Thought")
+	}
+	return a.sty.Messages.ThinkingFooterTitle.Render("Thought ") +
+		a.sty.Messages.ThinkingFooterDuration.Render(duration.String())
 }
 
 // renderMarkdown renders content as markdown. F8 routes the call

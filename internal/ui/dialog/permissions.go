@@ -463,12 +463,7 @@ func (p *Permissions) renderHeader(contentWidth int) string {
 		if params, ok := p.permission.Params.(tools.BashPermissionsParams); ok {
 			lines = append(lines, p.renderKeyValue("Desc", params.Description, contentWidth))
 		}
-	case tools.DownloadToolName:
-		if params, ok := p.permission.Params.(tools.DownloadPermissionsParams); ok {
-			lines = append(lines, p.renderKeyValue("URL", params.URL, contentWidth))
-			lines = append(lines, p.renderKeyValue("File", fsext.PrettyPath(params.FilePath), contentWidth))
-		}
-	case tools.EditToolName, tools.WriteToolName, tools.MultiEditToolName, tools.ViewToolName:
+	case tools.EditToolName, tools.WriteToolName, tools.MultiEditToolName, tools.ReadToolName:
 		var filePath string
 		switch params := p.permission.Params.(type) {
 		case tools.EditPermissionsParams:
@@ -477,15 +472,11 @@ func (p *Permissions) renderHeader(contentWidth int) string {
 			filePath = params.FilePath
 		case tools.MultiEditPermissionsParams:
 			filePath = params.FilePath
-		case tools.ViewPermissionsParams:
+		case tools.ReadPermissionsParams:
 			filePath = params.FilePath
 		}
 		if filePath != "" {
 			lines = append(lines, p.renderKeyValue("File", fsext.PrettyPath(filePath), contentWidth))
-		}
-	case tools.LSToolName:
-		if params, ok := p.permission.Params.(tools.LSPermissionsParams); ok {
-			lines = append(lines, p.renderKeyValue("Directory", fsext.PrettyPath(params.Path), contentWidth))
 		}
 	}
 
@@ -536,16 +527,12 @@ func (p *Permissions) renderContent(width int) string {
 		return p.renderWriteContent(width)
 	case tools.MultiEditToolName:
 		return p.renderMultiEditContent(width)
-	case tools.DownloadToolName:
-		return p.renderDownloadContent(width)
 	case tools.FetchToolName:
 		return p.renderFetchContent(width)
 	case tools.AgenticFetchToolName:
 		return p.renderAgenticFetchContent(width)
-	case tools.ViewToolName:
+	case tools.ReadToolName:
 		return p.renderViewContent(width)
-	case tools.LSToolName:
-		return p.renderLSContent(width)
 	default:
 		return p.renderDefaultContent(width)
 	}
@@ -613,20 +600,6 @@ func (p *Permissions) renderDiff(filePath, oldContent, newContent string, conten
 	return result
 }
 
-func (p *Permissions) renderDownloadContent(width int) string {
-	params, ok := p.permission.Params.(tools.DownloadPermissionsParams)
-	if !ok {
-		return ""
-	}
-
-	content := fmt.Sprintf("URL: %s\nFile: %s", params.URL, fsext.PrettyPath(params.FilePath))
-	if params.Timeout > 0 {
-		content += fmt.Sprintf("\nTimeout: %ds", params.Timeout)
-	}
-
-	return p.renderContentPanel(content, width)
-}
-
 func (p *Permissions) renderFetchContent(width int) string {
 	params, ok := p.permission.Params.(tools.FetchPermissionsParams)
 	if !ok {
@@ -653,7 +626,7 @@ func (p *Permissions) renderAgenticFetchContent(width int) string {
 }
 
 func (p *Permissions) renderViewContent(width int) string {
-	params, ok := p.permission.Params.(tools.ViewPermissionsParams)
+	params, ok := p.permission.Params.(tools.ReadPermissionsParams)
 	if !ok {
 		return ""
 	}
@@ -664,20 +637,6 @@ func (p *Permissions) renderViewContent(width int) string {
 	}
 	if params.Limit > 0 && params.Limit != 2000 {
 		content += fmt.Sprintf("\nLines to read: %d", params.Limit)
-	}
-
-	return p.renderContentPanel(content, width)
-}
-
-func (p *Permissions) renderLSContent(width int) string {
-	params, ok := p.permission.Params.(tools.LSPermissionsParams)
-	if !ok {
-		return ""
-	}
-
-	content := fmt.Sprintf("Directory: %s", fsext.PrettyPath(params.Path))
-	if len(params.Ignore) > 0 {
-		content += fmt.Sprintf("\nIgnore patterns: %s", strings.Join(params.Ignore, ", "))
 	}
 
 	return p.renderContentPanel(content, width)

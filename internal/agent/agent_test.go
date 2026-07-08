@@ -100,7 +100,7 @@ func TestCoderAgent(t *testing.T) {
 				for _, msg := range msgs {
 					if msg.Role == message.Assistant {
 						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.ViewToolName {
+							if tc.Name == tools.ReadToolName {
 								tcID = tc.ID
 							}
 						}
@@ -142,7 +142,7 @@ func TestCoderAgent(t *testing.T) {
 				for _, msg := range msgs {
 					if msg.Role == message.Assistant {
 						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.ViewToolName {
+							if tc.Name == tools.ReadToolName {
 								readTCID = tc.ID
 							}
 							if tc.Name == tools.EditToolName || tc.Name == tools.WriteToolName {
@@ -213,49 +213,6 @@ func TestCoderAgent(t *testing.T) {
 				content, err := os.ReadFile(testFilePath)
 				require.NoError(t, err)
 				require.Contains(t, string(content), "hello bash")
-			})
-			t.Run("download tool", func(t *testing.T) {
-				agent, env := setupAgent(t, pair)
-
-				session, err := env.sessions.Create(t.Context(), "New Session")
-				require.NoError(t, err)
-
-				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "download the file from https://example-files.online-convert.com/document/txt/example.txt and save it as example.txt",
-					SessionID:       session.ID,
-					MaxOutputTokens: 10000,
-				})
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-
-				msgs, err := env.messages.List(t.Context(), session.ID)
-				require.NoError(t, err)
-
-				foundDownload := false
-				var downloadTCID string
-
-				for _, msg := range msgs {
-					if msg.Role == message.Assistant {
-						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.DownloadToolName {
-								downloadTCID = tc.ID
-							}
-						}
-					}
-					if msg.Role == message.Tool {
-						for _, tr := range msg.ToolResults() {
-							if tr.ToolCallID == downloadTCID {
-								foundDownload = true
-							}
-						}
-					}
-				}
-
-				require.True(t, foundDownload, "Expected to find a download operation")
-
-				examplePath := filepath.Join(env.workingDir, "example.txt")
-				_, err = os.Stat(examplePath)
-				require.NoError(t, err, "Expected example.txt file to exist")
 			})
 			t.Run("fetch tool", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
@@ -376,47 +333,6 @@ func TestCoderAgent(t *testing.T) {
 
 				require.True(t, foundGrep, "Expected to find a grep operation")
 			})
-			t.Run("ls tool", func(t *testing.T) {
-				agent, env := setupAgent(t, pair)
-
-				session, err := env.sessions.Create(t.Context(), "New Session")
-				require.NoError(t, err)
-
-				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "use ls to list the files in the current directory",
-					SessionID:       session.ID,
-					MaxOutputTokens: 10000,
-				})
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-
-				msgs, err := env.messages.List(t.Context(), session.ID)
-				require.NoError(t, err)
-
-				foundLS := false
-				var lsTCID string
-
-				for _, msg := range msgs {
-					if msg.Role == message.Assistant {
-						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.LSToolName {
-								lsTCID = tc.ID
-							}
-						}
-					}
-					if msg.Role == message.Tool {
-						for _, tr := range msg.ToolResults() {
-							if tr.ToolCallID == lsTCID {
-								foundLS = true
-								require.Contains(t, tr.Content, "main.go", "Expected ls to list main.go")
-								require.Contains(t, tr.Content, "go.mod", "Expected ls to list go.mod")
-							}
-						}
-					}
-				}
-
-				require.True(t, foundLS, "Expected to find an ls operation")
-			})
 			t.Run("multiedit tool", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
 
@@ -460,45 +376,6 @@ func TestCoderAgent(t *testing.T) {
 				content, err := os.ReadFile(mainGoPath)
 				require.NoError(t, err)
 				require.Contains(t, string(content), "Hello, Crush!", "Expected file to contain 'Hello, Crush!'")
-			})
-			t.Run("sourcegraph tool", func(t *testing.T) {
-				agent, env := setupAgent(t, pair)
-
-				session, err := env.sessions.Create(t.Context(), "New Session")
-				require.NoError(t, err)
-
-				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "use sourcegraph to search for 'func main' in Go repositories",
-					SessionID:       session.ID,
-					MaxOutputTokens: 10000,
-				})
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-
-				msgs, err := env.messages.List(t.Context(), session.ID)
-				require.NoError(t, err)
-
-				foundSourcegraph := false
-				var sourcegraphTCID string
-
-				for _, msg := range msgs {
-					if msg.Role == message.Assistant {
-						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.SourcegraphToolName {
-								sourcegraphTCID = tc.ID
-							}
-						}
-					}
-					if msg.Role == message.Tool {
-						for _, tr := range msg.ToolResults() {
-							if tr.ToolCallID == sourcegraphTCID {
-								foundSourcegraph = true
-							}
-						}
-					}
-				}
-
-				require.True(t, foundSourcegraph, "Expected to find a sourcegraph operation")
 			})
 			t.Run("write tool", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
@@ -552,7 +429,7 @@ func TestCoderAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "use glob to find all .go files and use ls to list the current directory, it is very important that you run both tool calls in parallel",
+					Prompt:          "use glob to find all .go files and use grep to search for package declarations, it is very important that you run both tool calls in parallel",
 					SessionID:       session.ID,
 					MaxOutputTokens: 10000,
 				})
@@ -581,27 +458,27 @@ func TestCoderAgent(t *testing.T) {
 				require.GreaterOrEqual(t, len(toolCalls), 2, "Expected at least 2 tool calls in parallel")
 
 				foundGlob := false
-				foundLS := false
-				var globTCID, lsTCID string
+				foundGrep := false
+				var globTCID, grepTCID string
 
 				for _, tc := range toolCalls {
 					if tc.Name == tools.GlobToolName {
 						foundGlob = true
 						globTCID = tc.ID
 					}
-					if tc.Name == tools.LSToolName {
-						foundLS = true
-						lsTCID = tc.ID
+					if tc.Name == tools.GrepToolName {
+						foundGrep = true
+						grepTCID = tc.ID
 					}
 				}
 
 				require.True(t, foundGlob, "Expected to find a glob tool call")
-				require.True(t, foundLS, "Expected to find an ls tool call")
+				require.True(t, foundGrep, "Expected to find a grep tool call")
 
 				require.GreaterOrEqual(t, len(toolMsgs), 2, "Expected at least 2 tool results in the same message")
 
 				foundGlobResult := false
-				foundLSResult := false
+				foundGrepResult := false
 
 				for _, msg := range toolMsgs {
 					for _, tr := range msg.ToolResults() {
@@ -610,16 +487,16 @@ func TestCoderAgent(t *testing.T) {
 							require.Contains(t, tr.Content, "main.go", "Expected glob result to contain main.go")
 							require.False(t, tr.IsError, "Expected glob result to not be an error")
 						}
-						if tr.ToolCallID == lsTCID {
-							foundLSResult = true
-							require.Contains(t, tr.Content, "main.go", "Expected ls result to contain main.go")
-							require.False(t, tr.IsError, "Expected ls result to not be an error")
+						if tr.ToolCallID == grepTCID {
+							foundGrepResult = true
+							require.Contains(t, tr.Content, "main.go", "Expected grep result to contain main.go")
+							require.False(t, tr.IsError, "Expected grep result to not be an error")
 						}
 					}
 				}
 
 				require.True(t, foundGlobResult, "Expected to find glob tool result")
-				require.True(t, foundLSResult, "Expected to find ls tool result")
+				require.True(t, foundGrepResult, "Expected to find grep tool result")
 			})
 		})
 	}

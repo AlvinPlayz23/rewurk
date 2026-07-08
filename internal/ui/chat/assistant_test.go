@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/charmbracelet/crush/internal/message"
@@ -71,6 +72,39 @@ func TestAssistantMessageItemExpandableEmptyThinkingNoOp(t *testing.T) {
 	}
 	require.False(t, exp.ToggleExpanded())
 	require.Equal(t, thinkingCollapsed, item.thinkingViewMode)
+}
+
+func TestAssistantMessageItemHiddenThinkingRendersDuration(t *testing.T) {
+	t.Parallel()
+
+	sty := styles.CharmtonePantera()
+	msg := thinkingMessage("hidden-thinking", "step one", "")
+	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
+
+	require.True(t, item.SetThinkingVisible(false))
+	rendered := ansi.Strip(item.RawRender(80))
+
+	require.Contains(t, rendered, "Thought ")
+	require.Contains(t, rendered, msg.ThinkingDuration().String())
+	require.NotContains(t, rendered, "Thinking hidden")
+	require.NotContains(t, rendered, "step one")
+}
+
+func TestAssistantMessageItemThinkingVisibilityInvalidatesPrefixCache(t *testing.T) {
+	t.Parallel()
+
+	sty := styles.CharmtonePantera()
+	msg := thinkingMessage("visibility-cache", "step one", "")
+	item := NewAssistantMessageItem(&sty, msg).(*AssistantMessageItem)
+
+	visible := ansi.Strip(item.RawRender(80))
+	require.Contains(t, visible, "step one")
+
+	require.True(t, item.SetThinkingVisible(false))
+	hidden := ansi.Strip(item.RawRender(80))
+	require.NotContains(t, hidden, "step one")
+	require.Contains(t, hidden, "Thought ")
+	require.NotEqual(t, strings.TrimSpace(visible), strings.TrimSpace(hidden))
 }
 
 // TestAssistantMessageItemTailWindowBoundary guards the B1 fix: the

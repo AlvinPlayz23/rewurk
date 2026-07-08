@@ -86,32 +86,16 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 			},
 		},
 		{
-			name:     "ls",
-			toolName: tools.LSToolName,
-			params: tools.LSPermissionsParams{
-				Path:   "/tmp",
-				Ignore: []string{".git"},
-				Depth:  2,
-			},
-			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.LSPermissionsParams)
-				require.True(t, ok, "params must decode as tools.LSPermissionsParams, got %T", got)
-				require.Equal(t, "/tmp", v.Path)
-				require.Equal(t, []string{".git"}, v.Ignore)
-				require.Equal(t, 2, v.Depth)
-			},
-		},
-		{
 			name:     "read",
-			toolName: tools.ViewToolName,
-			params: tools.ViewPermissionsParams{
+			toolName: tools.ReadToolName,
+			params: tools.ReadPermissionsParams{
 				FilePath: "/tmp/x.go",
 				Offset:   10,
 				Limit:    100,
 			},
 			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.ViewPermissionsParams)
-				require.True(t, ok, "params must decode as tools.ViewPermissionsParams, got %T", got)
+				v, ok := got.(tools.ReadPermissionsParams)
+				require.True(t, ok, "params must decode as tools.ReadPermissionsParams, got %T", got)
 				require.Equal(t, "/tmp/x.go", v.FilePath)
 			},
 		},
@@ -126,21 +110,6 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 				v, ok := got.(tools.FetchPermissionsParams)
 				require.True(t, ok, "params must decode as tools.FetchPermissionsParams, got %T", got)
 				require.Equal(t, "https://example.com", v.URL)
-			},
-		},
-		{
-			name:     "download",
-			toolName: tools.DownloadToolName,
-			params: tools.DownloadPermissionsParams{
-				URL:      "https://example.com/x.zip",
-				FilePath: "/tmp/x.zip",
-				Timeout:  30,
-			},
-			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.DownloadPermissionsParams)
-				require.True(t, ok, "params must decode as tools.DownloadPermissionsParams, got %T", got)
-				require.Equal(t, "https://example.com/x.zip", v.URL)
-				require.Equal(t, "/tmp/x.zip", v.FilePath)
 			},
 		},
 		{

@@ -389,7 +389,7 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 	// Seed the active theme key from the large model provider so the
 	// first model selection can correctly skip a redundant theme swap.
 	if cfg := com.Config(); cfg != nil {
-		ui.themeKey = styles.ThemeKeyForProvider(cfg.Models[config.SelectedModelTypeLarge].Provider)
+		ui.themeKey = styles.ThemeKey(ui.configuredThemeName(), cfg.Models[config.SelectedModelTypeLarge].Provider)
 	}
 
 	ui.setEditorPrompt(com.Workspace.PermissionSkipRequests())
@@ -1328,6 +1328,7 @@ func (m *UI) updateSessionMessage(msg message.Message) tea.Cmd {
 	if existingItem != nil {
 		if assistantItem, ok := existingItem.(*chat.AssistantMessageItem); ok {
 			assistantItem.SetMessage(&msg)
+			assistantItem.SetThinkingVisible(m.showThinkingBlocks)
 		}
 	}
 
@@ -1541,6 +1542,9 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 			m.notifyBackend = selectNotificationBackend(m.caps, cfg)
 		}
 		m.dialog.CloseDialog(dialog.NotificationsID)
+	case dialog.ActionSelectTheme:
+		cmds = append(cmds, m.selectTheme(msg.Theme))
+		m.dialog.CloseDialog(dialog.ThemesID)
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
@@ -3576,12 +3580,48 @@ func (m *UI) cacheSidebarLogo(width int) {
 // invalidating the markdown renderer cache and re-rendering the entire
 // transcript for no visible change.
 func (m *UI) applyThemeForProvider(providerID string) {
-	key := styles.ThemeKeyForProvider(providerID)
+	themeName := m.configuredThemeName()
+	key := styles.ThemeKey(themeName, providerID)
 	if key == m.themeKey {
 		return
 	}
 	m.themeKey = key
-	m.applyTheme(styles.ThemeForProvider(providerID))
+	m.applyTheme(styles.Theme(themeName, providerID))
+}
+
+func (m *UI) configuredThemeName() string {
+	if m == nil || m.com == nil || m.com.Workspace == nil {
+		return ""
+	}
+	cfg := m.com.Config()
+	if cfg == nil || cfg.Options == nil || cfg.Options.TUI == nil {
+		return ""
+	}
+	return cfg.Options.TUI.Theme
+}
+
+func (m *UI) selectTheme(themeName string) tea.Cmd {
+	return func() tea.Msg {
+		cfg := m.com.Config()
+		if cfg == nil {
+			return util.ReportError(errors.New("configuration not found"))()
+		}
+		if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.tui.theme", themeName); err != nil {
+			return util.ReportError(err)()
+		}
+		if cfg.Options == nil {
+			cfg.Options = &config.Options{}
+		}
+		if cfg.Options.TUI == nil {
+			cfg.Options.TUI = &config.TUIOptions{}
+		}
+		cfg.Options.TUI.Theme = themeName
+
+		providerID := cfg.Models[config.SelectedModelTypeLarge].Provider
+		m.themeKey = styles.ThemeKey(themeName, providerID)
+		m.applyTheme(styles.Theme(themeName, providerID))
+		return util.NewInfoMsg("Theme set to: " + themeName)
+	}
 }
 
 // applyTheme replaces the active styles with the given theme, drops the
@@ -3853,6 +3893,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openNotificationsDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ThemesID:
+		if cmd := m.openThemesDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.FilePickerID:
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -3951,6 +3995,18 @@ func (m *UI) openNotificationsDialog() tea.Cmd {
 
 	notificationsDialog := dialog.NewNotifications(m.com)
 	m.dialog.OpenDialog(notificationsDialog)
+	return nil
+}
+
+// openThemesDialog opens the theme picker dialog.
+func (m *UI) openThemesDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ThemesID) {
+		m.dialog.BringToFront(dialog.ThemesID)
+		return nil
+	}
+
+	themesDialog := dialog.NewThemes(m.com)
+	m.dialog.OpenDialog(themesDialog)
 	return nil
 }
 

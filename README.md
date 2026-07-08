@@ -453,7 +453,6 @@ permissions. Use this with care.
   "permissions": {
     "allowed_tools": [
       "read",
-      "ls",
       "grep",
       "edit",
       "mcp_context7_get-library-doc"
@@ -475,7 +474,7 @@ completely hidden from the agent.
 {
   "$schema": "https://charm.land/crush.json",
   "options": {
-    "disabled_tools": ["bash", "sourcegraph"]
+    "disabled_tools": ["bash", "fetch"]
   }
 }
 ```

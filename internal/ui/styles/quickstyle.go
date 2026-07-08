@@ -640,7 +640,8 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.ContentCodeLine = base.Background(o.bgBase).PaddingLeft(2)
 	s.Tool.ContentCodeTruncation = muted.Background(o.bgBase).PaddingLeft(2)
 	s.Tool.ContentCodeBg = o.bgBase
-	s.Tool.Body = base.PaddingLeft(2)
+	s.Tool.Body = base
+	s.Tool.Connector = subtle
 
 	// Deprecated - kept for backward compatibility
 	s.Tool.ContentBg = muted.Background(o.bgLeastVisible)
@@ -843,7 +844,7 @@ func quickStyle(o quickStyleOpts) Styles {
 		Foreground(o.accent).
 		Bold(true).
 		SetString("  ")
-	s.Messages.Thinking = lipgloss.NewStyle().MaxHeight(10)
+	s.Messages.Thinking = lipgloss.NewStyle().MaxHeight(10).Italic(true)
 	s.Messages.ErrorTag = lipgloss.NewStyle().Padding(0, 1).
 		Background(o.destructive).Foreground(o.onPrimary)
 	s.Messages.ErrorTitle = lipgloss.NewStyle().Foreground(o.fgSubtle)
@@ -889,7 +890,7 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Messages.AssistantCanceled = lipgloss.NewStyle().Foreground(o.fgBase).Italic(true)
 
 	// Thinking section styles
-	s.Messages.ThinkingBox = subtle.Background(o.bgLeastVisible)
+	s.Messages.ThinkingBox = subtle.Background(o.bgLeastVisible).Italic(true)
 	s.Messages.ThinkingTruncationHint = muted
 	s.Messages.ThinkingFooterTitle = muted
 	s.Messages.ThinkingFooterDuration = subtle

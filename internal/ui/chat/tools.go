@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -27,8 +26,8 @@ import (
 // responseContextHeight limits the number of lines displayed in tool output.
 const responseContextHeight = 10
 
-// toolBodyLeftPaddingTotal represents the padding that should be applied to each tool body
-const toolBodyLeftPaddingTotal = 2
+// toolBodyLeftPaddingTotal accounts for the per-line tree gutter before body content.
+const toolBodyLeftPaddingTotal = 5
 
 // ToolStatus represents the current state of a tool call.
 type ToolStatus int
@@ -223,8 +222,8 @@ func NewToolMessageItem(
 		item = NewJobOutputToolMessageItem(sty, toolCall, result, canceled)
 	case tools.JobKillToolName:
 		item = NewJobKillToolMessageItem(sty, toolCall, result, canceled)
-	case tools.ViewToolName:
-		item = NewViewToolMessageItem(sty, toolCall, result, canceled)
+	case tools.ReadToolName:
+		item = NewReadToolMessageItem(sty, toolCall, result, canceled)
 	case tools.WriteToolName:
 		item = NewWriteToolMessageItem(sty, toolCall, result, canceled)
 	case tools.EditToolName:
@@ -235,16 +234,8 @@ func NewToolMessageItem(
 		item = NewGlobToolMessageItem(sty, toolCall, result, canceled)
 	case tools.GrepToolName:
 		item = NewGrepToolMessageItem(sty, toolCall, result, canceled)
-	case tools.LSToolName:
-		item = NewLSToolMessageItem(sty, toolCall, result, canceled)
-	case tools.DownloadToolName:
-		item = NewDownloadToolMessageItem(sty, toolCall, result, canceled)
 	case tools.FetchToolName:
 		item = NewFetchToolMessageItem(sty, toolCall, result, canceled)
-	case tools.SourcegraphToolName:
-		item = NewSourcegraphToolMessageItem(sty, toolCall, result, canceled)
-	case tools.DiagnosticsToolName:
-		item = NewDiagnosticsToolMessageItem(sty, toolCall, result, canceled)
 	case agent.AgentToolName:
 		item = NewAgentToolMessageItem(sty, toolCall, result, canceled)
 	case tools.AgenticFetchToolName:
@@ -257,8 +248,6 @@ func NewToolMessageItem(
 		item = NewTodosToolMessageItem(sty, toolCall, result, canceled)
 	case tools.ReferencesToolName:
 		item = NewReferencesToolMessageItem(sty, toolCall, result, canceled)
-	case tools.LSPRestartToolName:
-		item = NewLSPRestartToolMessageItem(sty, toolCall, result, canceled)
 	default:
 		if IsDockerMCPTool(toolCall.Name) {
 			item = NewDockerMCPToolMessageItem(sty, toolCall, result, canceled)
@@ -521,9 +510,10 @@ func pendingTool(sty *styles.Styles, name string, anim *anim.Anim, nested bool) 
 // Returns the rendered output and true if early state was handled.
 func toolEarlyStateContent(sty *styles.Styles, opts *ToolRenderOpts, width int) (string, bool) {
 	var msg string
+	bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 	switch opts.Status {
 	case ToolStatusError:
-		msg = toolErrorContent(sty, opts.Result, width)
+		msg = toolErrorContent(sty, opts.Result, bodyWidth)
 	case ToolStatusCanceled:
 		msg = sty.Tool.StateCancelled.Render("Canceled.")
 	case ToolStatusAwaitingPermission:
@@ -692,7 +682,7 @@ func toolOutputCodeContent(sty *styles.Styles, path, content string, offset, wid
 	maxDigits := getDigits(maxLineNumber)
 	numFmt := fmt.Sprintf("%%%dd", maxDigits)
 
-	bodyWidth := width - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 	codeWidth := bodyWidth - maxDigits
 
 	var out []string
@@ -946,7 +936,7 @@ func formatSize(bytes int) string {
 
 // toolOutputDiffContent renders a diff between old and new content.
 func toolOutputDiffContent(sty *styles.Styles, file, oldContent, newContent string, width int, expanded bool) string {
-	bodyWidth := width - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 
 	formatter := common.DiffFormatter(sty).
 		Before(file, oldContent).
@@ -996,7 +986,7 @@ func formatNonZero(value int) string {
 
 // toolOutputMultiEditDiffContent renders a diff with optional failed edits note.
 func toolOutputMultiEditDiffContent(sty *styles.Styles, file string, meta tools.MultiEditResponseMetadata, totalEdits, width int, expanded bool) string {
-	bodyWidth := width - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 
 	formatter := common.DiffFormatter(sty).
 		Before(file, meta.OldContent).
@@ -1143,8 +1133,8 @@ func (t *baseToolMessageItem) formatParametersForCopy() string {
 			cmd = strings.ReplaceAll(cmd, "\t", "    ")
 			return fmt.Sprintf("**Command:** %s", cmd)
 		}
-	case tools.ViewToolName:
-		var params tools.ViewParams
+	case tools.ReadToolName:
+		var params tools.ReadParams
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
 			var parts []string
 			parts = append(parts, fmt.Sprintf("**File:** %s", fsext.PrettyPath(params.FilePath)))
@@ -1230,41 +1220,6 @@ func (t *baseToolMessageItem) formatParametersForCopy() string {
 			}
 			return strings.Join(parts, "\n")
 		}
-	case tools.LSToolName:
-		var params tools.LSParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			path := params.Path
-			if path == "" {
-				path = "."
-			}
-			return fmt.Sprintf("**Path:** %s", fsext.PrettyPath(path))
-		}
-	case tools.DownloadToolName:
-		var params tools.DownloadParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			var parts []string
-			parts = append(parts, fmt.Sprintf("**URL:** %s", params.URL))
-			parts = append(parts, fmt.Sprintf("**File Path:** %s", fsext.PrettyPath(params.FilePath)))
-			if params.Timeout > 0 {
-				parts = append(parts, fmt.Sprintf("**Timeout:** %s", (time.Duration(params.Timeout)*time.Second).String()))
-			}
-			return strings.Join(parts, "\n")
-		}
-	case tools.SourcegraphToolName:
-		var params tools.SourcegraphParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			var parts []string
-			parts = append(parts, fmt.Sprintf("**Query:** %s", params.Query))
-			if params.Count > 0 {
-				parts = append(parts, fmt.Sprintf("**Count:** %d", params.Count))
-			}
-			if params.ContextWindow > 0 {
-				parts = append(parts, fmt.Sprintf("**Context:** %d", params.ContextWindow))
-			}
-			return strings.Join(parts, "\n")
-		}
-	case tools.DiagnosticsToolName:
-		return "**Project:** diagnostics"
 	case agent.AgentToolName:
 		var params agent.AgentParams
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
@@ -1304,7 +1259,7 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 	switch t.toolCall.Name {
 	case tools.BashToolName:
 		return t.formatBashResultForCopy()
-	case tools.ViewToolName:
+	case tools.ReadToolName:
 		return t.formatViewResultForCopy()
 	case tools.EditToolName:
 		return t.formatEditResultForCopy()
@@ -1320,7 +1275,7 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 		return t.formatWebFetchResultForCopy()
 	case agent.AgentToolName:
 		return t.formatAgentResultForCopy()
-	case tools.DownloadToolName, tools.GrepToolName, tools.GlobToolName, tools.LSToolName, tools.SourcegraphToolName, tools.DiagnosticsToolName, tools.TodosToolName:
+	case tools.GrepToolName, tools.GlobToolName, tools.TodosToolName:
 		return fmt.Sprintf("```\n%s\n```", t.result.Content)
 	default:
 		return t.result.Content
@@ -1356,7 +1311,7 @@ func (t *baseToolMessageItem) formatViewResultForCopy() string {
 		return ""
 	}
 
-	var meta tools.ViewResponseMetadata
+	var meta tools.ReadResponseMetadata
 	if t.result.Metadata != "" {
 		json.Unmarshal([]byte(t.result.Metadata), &meta)
 	}
@@ -1644,8 +1599,6 @@ func prettifyToolName(name string) string {
 		return "Job: Output"
 	case tools.JobKillToolName:
 		return "Job: Kill"
-	case tools.DownloadToolName:
-		return "Download"
 	case tools.EditToolName:
 		return "Edit"
 	case tools.MultiEditToolName:
@@ -1662,13 +1615,9 @@ func prettifyToolName(name string) string {
 		return "Glob"
 	case tools.GrepToolName:
 		return "Grep"
-	case tools.LSToolName:
-		return "List"
-	case tools.SourcegraphToolName:
-		return "Sourcegraph"
 	case tools.TodosToolName:
 		return "To-Do"
-	case tools.ViewToolName:
+	case tools.ReadToolName:
 		return "Read"
 	case tools.WriteToolName:
 		return "Write"

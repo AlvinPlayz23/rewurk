@@ -309,7 +309,8 @@ type Styles struct {
 		ContentCodeLine       lipgloss.Style // Code line with background and width
 		ContentCodeTruncation lipgloss.Style // Code truncation message with bgBase
 		ContentCodeBg         color.Color    // Background color for syntax highlighting
-		Body                  lipgloss.Style // Body content padding (PaddingLeft(2))
+		Body                  lipgloss.Style // Base body content style; gutter padding is added by chat renderers.
+		Connector             lipgloss.Style // Per-line tree branch gutter (├─ / ╰─) on result bodies
 
 		// Deprecated - kept for backward compatibility
 		ContentBg         lipgloss.Style // Content background

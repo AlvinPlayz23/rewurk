@@ -185,8 +185,8 @@ func (r *AgentToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 
 	// Add body content when completed.
 	if opts.HasResult() && opts.Result.Content != "" {
-		body := toolOutputMarkdownContent(sty, opts.Result.Content, cappedWidth-toolBodyLeftPaddingTotal, opts.ExpandedContent)
-		return joinToolParts(result, body)
+		body := toolOutputMarkdownContent(sty, opts.Result.Content, max(1, cappedWidth-toolBodyLeftPaddingTotal), opts.ExpandedContent)
+		return joinToolPartsPlain(result, body)
 	}
 
 	return result
@@ -354,8 +354,8 @@ func (r *AgenticFetchToolRenderContext) RenderTool(sty *styles.Styles, width int
 
 	// Add body content when completed.
 	if opts.HasResult() && opts.Result.Content != "" {
-		body := toolOutputMarkdownContent(sty, opts.Result.Content, cappedWidth-toolBodyLeftPaddingTotal, opts.ExpandedContent)
-		return joinToolParts(result, body)
+		body := toolOutputMarkdownContent(sty, opts.Result.Content, max(1, cappedWidth-toolBodyLeftPaddingTotal), opts.ExpandedContent)
+		return joinToolPartsPlain(result, body)
 	}
 
 	return result

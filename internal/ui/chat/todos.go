@@ -125,14 +125,14 @@ func (t *TodosToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if body == "" {
 		return header
 	}
 
-	return joinToolParts(header, sty.Tool.Body.Render(body))
+	return joinToolParts(sty, header, sty.Tool.Body.Render(body))
 }
 
 // FormatTodosList formats a list of todos for display.

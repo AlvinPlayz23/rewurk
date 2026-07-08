@@ -1,5 +1,63 @@
 # Changelog
 
+## Removed Built-In Tools
+
+- Removed the `sourcegraph` tool and its Sourcegraph API client.
+- Removed the `download` tool for fetching remote files to disk.
+- Removed the `ls` tool for directory listing.
+- Removed the `lsp_restart` tool for restarting LSP servers.
+- Removed the `lsp_diagnostics` tool (diagnostic helpers retained for edit/read).
+- Removed the `crush_info` tool for displaying Crush configuration.
+- Removed the `crush_logs` tool for reading Crush log files.
+- Removed the corresponding UI chat renderers for each removed tool.
+- Removed LS and download permission dialog panels and proto unmarshal paths.
+- Updated agent tool registry, config defaults, tests, docs, and schema examples.
+
+Changed files:
+
+- `internal/agent/coordinator.go`
+- `internal/agent/agentic_fetch_tool.go`
+- `internal/agent/common_test.go`
+- `internal/agent/agent_test.go`
+- `internal/agent/tools/diagnostics.go`
+- `internal/config/config.go`
+- `internal/config/load_test.go`
+- `internal/ui/chat/tools.go`
+- `internal/ui/chat/file.go`
+- `internal/ui/chat/search.go`
+- `internal/ui/dialog/permissions.go`
+- `internal/proto/tools.go`
+- `internal/proto/permission.go`
+- `internal/proto/permission_test.go`
+- `internal/skills/builtin/crush-config/SKILL.md`
+- `internal/ui/AGENTS.md`
+- `README.md`
+
+Deleted files:
+
+- `internal/agent/tools/sourcegraph.go`
+- `internal/agent/tools/sourcegraph.md.tpl`
+- `internal/agent/tools/download.go`
+- `internal/agent/tools/download.md.tpl`
+- `internal/agent/tools/ls.go`
+- `internal/agent/tools/ls.md.tpl`
+- `internal/agent/tools/lsp_restart.go`
+- `internal/agent/tools/lsp_restart.md`
+- `internal/agent/tools/diagnostics.md`
+- `internal/agent/tools/crush_info.go`
+- `internal/agent/tools/crush_info.md`
+- `internal/agent/tools/crush_info_test.go`
+- `internal/agent/tools/crush_logs.go`
+- `internal/agent/tools/crush_logs.md.tpl`
+- `internal/agent/tools/crush_logs_test.go`
+- `internal/ui/chat/lsp_restart.go`
+- `internal/ui/chat/diagnostics.go`
+
+Validation:
+
+- Ran `go build ./...` successfully.
+- Ran `go test ./internal/config ./internal/proto ./internal/ui/chat ./internal/ui/dialog ./internal/permission` successfully.
+
 ## UI Message And Footer Cleanup
 
 - Removed the visible `C` and `U` markers from assistant and user chat messages.

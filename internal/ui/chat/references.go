@@ -50,14 +50,14 @@ func (r *ReferencesToolRenderContext) RenderTool(sty *styles.Styles, width int, 
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if opts.HasEmptyResult() {
 		return header
 	}
 
-	bodyWidth := cappedWidth - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, cappedWidth-toolBodyLeftPaddingTotal)
 	body := sty.Tool.Body.Render(toolOutputPlainContent(sty, opts.Result.Content, bodyWidth, opts.ExpandedContent))
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }

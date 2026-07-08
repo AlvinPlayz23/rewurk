@@ -133,13 +133,11 @@ tool names to specific types:
 | File                  | Tools rendered                                 |
 | --------------------- | ---------------------------------------------- |
 | `chat/bash.go`        | Bash, JobOutput, JobKill                       |
-| `chat/file.go`        | View, Write, Edit, MultiEdit, Download         |
-| `chat/search.go`      | Glob, Grep, LS, Sourcegraph                    |
+| `chat/file.go`        | View, Write, Edit, MultiEdit                   |
+| `chat/search.go`      | Glob, Grep                                     |
 | `chat/fetch.go`       | Fetch, WebFetch, WebSearch                     |
 | `chat/agent.go`       | Agent, AgenticFetch                            |
-| `chat/diagnostics.go` | Diagnostics                                    |
 | `chat/references.go`  | References                                     |
-| `chat/lsp_restart.go` | LSPRestart                                     |
 | `chat/todos.go`       | Todos                                          |
 | `chat/mcp.go`         | MCP tools (`mcp_` prefix)                      |
 | `chat/generic.go`     | Fallback for unrecognized tools                |

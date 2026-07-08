@@ -58,7 +58,7 @@ func (f *FetchToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if opts.HasEmptyResult() {
@@ -68,7 +68,7 @@ func (f *FetchToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 	// Determine file extension for syntax highlighting based on format.
 	file := getFileExtensionForFormat(params.Format)
 	body := toolOutputCodeContent(sty, file, opts.Result.Content, 0, cappedWidth, opts.ExpandedContent)
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }
 
 // getFileExtensionForFormat returns a filename with appropriate extension for syntax highlighting.
@@ -126,7 +126,7 @@ func (w *WebFetchToolRenderContext) RenderTool(sty *styles.Styles, width int, op
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if opts.HasEmptyResult() {
@@ -134,7 +134,7 @@ func (w *WebFetchToolRenderContext) RenderTool(sty *styles.Styles, width int, op
 	}
 
 	body := toolOutputMarkdownContent(sty, opts.Result.Content, cappedWidth, opts.ExpandedContent)
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }
 
 // -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ func (w *WebSearchToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if opts.HasEmptyResult() {
@@ -188,5 +188,5 @@ func (w *WebSearchToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 	}
 
 	body := toolOutputMarkdownContent(sty, opts.Result.Content, cappedWidth, opts.ExpandedContent)
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }

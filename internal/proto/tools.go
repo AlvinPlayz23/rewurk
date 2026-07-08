@@ -42,23 +42,6 @@ type BashResponseMetadata struct {
 	WorkingDirectory string `json:"working_directory"`
 }
 
-// DiagnosticsParams represents the parameters for the diagnostics tool.
-type DiagnosticsParams struct {
-	FilePath string `json:"file_path"`
-}
-
-const DownloadToolName = "download"
-
-// DownloadParams represents the parameters for the download tool.
-type DownloadParams struct {
-	URL      string `json:"url"`
-	FilePath string `json:"file_path"`
-	Timeout  int    `json:"timeout,omitempty"`
-}
-
-// DownloadPermissionsParams represents the permission parameters for the download tool.
-type DownloadPermissionsParams = tools.DownloadPermissionsParams
-
 const EditToolName = "edit"
 
 // EditParams represents the parameters for the edit tool.
@@ -129,31 +112,6 @@ type GrepResponseMetadata struct {
 	Truncated       bool `json:"truncated"`
 }
 
-const LSToolName = "ls"
-
-// LSParams represents the parameters for the ls tool.
-type LSParams struct {
-	Path   string   `json:"path"`
-	Ignore []string `json:"ignore"`
-}
-
-// LSPermissionsParams represents the permission parameters for the ls tool.
-type LSPermissionsParams = tools.LSPermissionsParams
-
-// TreeNode represents a node in a directory tree.
-type TreeNode struct {
-	Name     string      `json:"name"`
-	Path     string      `json:"path"`
-	Type     string      `json:"type"`
-	Children []*TreeNode `json:"children,omitempty"`
-}
-
-// LSResponseMetadata represents the metadata for an ls tool response.
-type LSResponseMetadata struct {
-	NumberOfFiles int  `json:"number_of_files"`
-	Truncated     bool `json:"truncated"`
-}
-
 const MultiEditToolName = "multiedit"
 
 // MultiEditOperation represents a single edit operation in a multi-edit.
@@ -181,36 +139,20 @@ type MultiEditResponseMetadata struct {
 	EditsApplied int    `json:"edits_applied"`
 }
 
-const SourcegraphToolName = "sourcegraph"
+const ReadToolName = "read"
 
-// SourcegraphParams represents the parameters for the sourcegraph tool.
-type SourcegraphParams struct {
-	Query         string `json:"query"`
-	Count         int    `json:"count,omitempty"`
-	ContextWindow int    `json:"context_window,omitempty"`
-	Timeout       int    `json:"timeout,omitempty"`
-}
-
-// SourcegraphResponseMetadata represents the metadata for a sourcegraph tool response.
-type SourcegraphResponseMetadata struct {
-	NumberOfMatches int  `json:"number_of_matches"`
-	Truncated       bool `json:"truncated"`
-}
-
-const ViewToolName = "read"
-
-// ViewParams represents the parameters for the read tool.
-type ViewParams struct {
+// ReadParams represents the parameters for the read tool.
+type ReadParams struct {
 	FilePath string `json:"file_path"`
 	Offset   int    `json:"offset"`
 	Limit    int    `json:"limit"`
 }
 
-// ViewPermissionsParams represents the permission parameters for the read tool.
-type ViewPermissionsParams = tools.ViewPermissionsParams
+// ReadPermissionsParams represents the permission parameters for the read tool.
+type ReadPermissionsParams = tools.ReadPermissionsParams
 
-// ViewResponseMetadata represents the metadata for a read tool response.
-type ViewResponseMetadata struct {
+// ReadResponseMetadata represents the metadata for a read tool response.
+type ReadResponseMetadata struct {
 	FilePath string `json:"file_path"`
 	Content  string `json:"content"`
 }

@@ -88,12 +88,6 @@ func unmarshalToolParams(toolName string, raw json.RawMessage) (any, error) {
 			return nil, err
 		}
 		return params, nil
-	case DownloadToolName:
-		var params DownloadPermissionsParams
-		if err := json.Unmarshal(raw, &params); err != nil {
-			return nil, err
-		}
-		return params, nil
 	case EditToolName:
 		var params EditPermissionsParams
 		if err := json.Unmarshal(raw, &params); err != nil {
@@ -124,14 +118,8 @@ func unmarshalToolParams(toolName string, raw json.RawMessage) (any, error) {
 			return nil, err
 		}
 		return params, nil
-	case ViewToolName:
-		var params ViewPermissionsParams
-		if err := json.Unmarshal(raw, &params); err != nil {
-			return nil, err
-		}
-		return params, nil
-	case LSToolName:
-		var params LSPermissionsParams
+	case ReadToolName:
+		var params ReadPermissionsParams
 		if err := json.Unmarshal(raw, &params); err != nil {
 			return nil, err
 		}

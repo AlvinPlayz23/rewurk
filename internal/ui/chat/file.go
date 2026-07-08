@@ -15,34 +15,34 @@ import (
 // Read Tool
 // -----------------------------------------------------------------------------
 
-// ViewToolMessageItem is a message item that represents a read tool call.
-type ViewToolMessageItem struct {
+// ReadToolMessageItem is a message item that represents a read tool call.
+type ReadToolMessageItem struct {
 	*baseToolMessageItem
 }
 
-var _ ToolMessageItem = (*ViewToolMessageItem)(nil)
+var _ ToolMessageItem = (*ReadToolMessageItem)(nil)
 
-// NewViewToolMessageItem creates a new [ViewToolMessageItem].
-func NewViewToolMessageItem(
+// NewReadToolMessageItem creates a new [ReadToolMessageItem].
+func NewReadToolMessageItem(
 	sty *styles.Styles,
 	toolCall message.ToolCall,
 	result *message.ToolResult,
 	canceled bool,
 ) ToolMessageItem {
-	return newBaseToolMessageItem(sty, toolCall, result, &ViewToolRenderContext{}, canceled)
+	return newBaseToolMessageItem(sty, toolCall, result, &ReadToolRenderContext{}, canceled)
 }
 
-// ViewToolRenderContext renders read tool messages.
-type ViewToolRenderContext struct{}
+// ReadToolRenderContext renders read tool messages.
+type ReadToolRenderContext struct{}
 
 // RenderTool implements the [ToolRenderer] interface.
-func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
+func (v *ReadToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
 	cappedWidth := cappedMessageWidth(width)
 	if opts.IsPending() {
 		return pendingTool(sty, "Read", opts.Anim, opts.Compact)
 	}
 
-	var params tools.ViewParams
+	var params tools.ReadParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
 	}
@@ -62,7 +62,7 @@ func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if !opts.HasResult() {
@@ -72,20 +72,20 @@ func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 	// Handle image content.
 	if opts.Result.Data != "" && strings.HasPrefix(opts.Result.MIMEType, "image/") {
 		body := toolOutputImageContent(sty, opts.Result.Data, opts.Result.MIMEType)
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
 	// Try to get content from metadata first (contains actual file content).
-	var meta tools.ViewResponseMetadata
+	var meta tools.ReadResponseMetadata
 	content := opts.Result.Content
 	if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil && meta.Content != "" {
 		content = meta.Content
 	}
 
 	// Handle skill content.
-	if meta.ResourceType == tools.ViewResourceSkill {
+	if meta.ResourceType == tools.ReadResourceSkill {
 		body := toolOutputSkillContent(sty, meta.ResourceName, meta.ResourceDescription)
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
 	if content == "" {
@@ -94,7 +94,7 @@ func (v *ViewToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 
 	// Render code content with syntax highlighting.
 	body := toolOutputCodeContent(sty, params.FilePath, content, params.Offset, cappedWidth, opts.ExpandedContent)
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }
 
 // -----------------------------------------------------------------------------
@@ -141,7 +141,7 @@ func (w *WriteToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 
 	if !opts.HasResult() {
 		if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-			return joinToolParts(header, earlyState)
+			return joinToolParts(sty, header, earlyState)
 		}
 		return header
 	}
@@ -150,17 +150,17 @@ func (w *WriteToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 	if opts.Result.IsError {
 		var meta tools.WriteResponseMetadata
 		if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil && meta.Diff != "" {
-			errLine := toolErrorContent(sty, opts.Result, cappedWidth)
+			errLine := toolErrorContent(sty, opts.Result, max(1, cappedWidth-toolBodyLeftPaddingTotal))
 			diff := toolOutputDiffContentFromUnified(sty, meta.Diff, cappedWidth, opts.ExpandedContent)
-			return strings.Join([]string{header, "", errLine, "", diff}, "\n")
+			return joinToolParts(sty, header, strings.Join([]string{errLine, "", diff}, "\n"))
 		}
-		return joinToolParts(header, toolErrorContent(sty, opts.Result, cappedWidth))
+		return joinToolParts(sty, header, toolErrorContent(sty, opts.Result, max(1, cappedWidth-toolBodyLeftPaddingTotal)))
 	}
 
 	// Render code content with syntax highlighting.
 	if params.Content != "" {
 		body := toolOutputCodeContent(sty, params.FilePath, params.Content, 0, cappedWidth, opts.ExpandedContent)
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
 	return header
@@ -210,7 +210,7 @@ func (e *EditToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 
 	if !opts.HasResult() {
 		if earlyState, ok := toolEarlyStateContent(sty, opts, width); ok {
-			return joinToolParts(header, earlyState)
+			return joinToolParts(sty, header, earlyState)
 		}
 		return header
 	}
@@ -218,20 +218,20 @@ func (e *EditToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 	// Get diff content from metadata.
 	var meta tools.EditResponseMetadata
 	if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err != nil {
-		bodyWidth := width - toolBodyLeftPaddingTotal
+		bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 		body := sty.Tool.Body.Render(toolOutputPlainContent(sty, opts.Result.Content, bodyWidth, opts.ExpandedContent))
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
 	diff := toolOutputDiffContent(sty, file, meta.OldContent, meta.NewContent, width, opts.ExpandedContent)
 
 	// On error (e.g. denied permission), show error above the diff.
 	if opts.Result.IsError {
-		errLine := toolErrorContent(sty, opts.Result, width)
-		return strings.Join([]string{header, "", errLine, "", diff}, "\n")
+		errLine := toolErrorContent(sty, opts.Result, max(1, width-toolBodyLeftPaddingTotal))
+		return joinToolParts(sty, header, strings.Join([]string{errLine, "", diff}, "\n"))
 	}
 
-	return joinToolParts(header, diff)
+	return joinToolParts(sty, header, diff)
 }
 
 // -----------------------------------------------------------------------------
@@ -283,7 +283,7 @@ func (m *MultiEditToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 
 	if !opts.HasResult() {
 		if earlyState, ok := toolEarlyStateContent(sty, opts, width); ok {
-			return joinToolParts(header, earlyState)
+			return joinToolParts(sty, header, earlyState)
 		}
 		return header
 	}
@@ -291,9 +291,9 @@ func (m *MultiEditToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 	// Get diff content from metadata.
 	var meta tools.MultiEditResponseMetadata
 	if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err != nil {
-		bodyWidth := width - toolBodyLeftPaddingTotal
+		bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 		body := sty.Tool.Body.Render(toolOutputPlainContent(sty, opts.Result.Content, bodyWidth, opts.ExpandedContent))
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
 	// Render diff with optional failed edits note.
@@ -301,71 +301,9 @@ func (m *MultiEditToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 
 	// On error (e.g. denied permission), show error above the diff.
 	if opts.Result.IsError {
-		errLine := toolErrorContent(sty, opts.Result, width)
-		return strings.Join([]string{header, "", errLine, "", diff}, "\n")
+		errLine := toolErrorContent(sty, opts.Result, max(1, width-toolBodyLeftPaddingTotal))
+		return joinToolParts(sty, header, strings.Join([]string{errLine, "", diff}, "\n"))
 	}
 
-	return joinToolParts(header, diff)
-}
-
-// -----------------------------------------------------------------------------
-// Download Tool
-// -----------------------------------------------------------------------------
-
-// DownloadToolMessageItem is a message item that represents a download tool call.
-type DownloadToolMessageItem struct {
-	*baseToolMessageItem
-}
-
-var _ ToolMessageItem = (*DownloadToolMessageItem)(nil)
-
-// NewDownloadToolMessageItem creates a new [DownloadToolMessageItem].
-func NewDownloadToolMessageItem(
-	sty *styles.Styles,
-	toolCall message.ToolCall,
-	result *message.ToolResult,
-	canceled bool,
-) ToolMessageItem {
-	return newBaseToolMessageItem(sty, toolCall, result, &DownloadToolRenderContext{}, canceled)
-}
-
-// DownloadToolRenderContext renders download tool messages.
-type DownloadToolRenderContext struct{}
-
-// RenderTool implements the [ToolRenderer] interface.
-func (d *DownloadToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
-	cappedWidth := cappedMessageWidth(width)
-	if opts.IsPending() {
-		return pendingTool(sty, "Download", opts.Anim, opts.Compact)
-	}
-
-	var params tools.DownloadParams
-	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
-		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
-	}
-
-	toolParams := []string{params.URL}
-	if params.FilePath != "" {
-		toolParams = append(toolParams, "file_path", fsext.PrettyPath(params.FilePath))
-	}
-	if params.Timeout != 0 {
-		toolParams = append(toolParams, "timeout", formatTimeout(params.Timeout))
-	}
-
-	header := toolHeader(sty, opts.Status, "Download", cappedWidth, opts, toolParams...)
-	if opts.Compact {
-		return header
-	}
-
-	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
-	}
-
-	if opts.HasEmptyResult() {
-		return header
-	}
-
-	bodyWidth := cappedWidth - toolBodyLeftPaddingTotal
-	body := sty.Tool.Body.Render(toolOutputPlainContent(sty, opts.Result.Content, bodyWidth, opts.ExpandedContent))
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, diff)
 }

@@ -78,7 +78,7 @@ func (b *BashToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if !opts.HasResult() {
@@ -93,9 +93,9 @@ func (b *BashToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 		return header
 	}
 
-	bodyWidth := cappedWidth - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, cappedWidth-toolBodyLeftPaddingTotal)
 	body := sty.Tool.Body.Render(toolOutputPlainContent(sty, output, bodyWidth, opts.ExpandedContent))
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }
 
 // -----------------------------------------------------------------------------
@@ -209,16 +209,16 @@ func renderJobTool(sty *styles.Styles, opts *ToolRenderOpts, width int, action, 
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, width); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if content == "" {
 		return header
 	}
 
-	bodyWidth := width - toolBodyLeftPaddingTotal
+	bodyWidth := max(1, width-toolBodyLeftPaddingTotal)
 	body := sty.Tool.Body.Render(toolOutputPlainContent(sty, content, bodyWidth, opts.ExpandedContent))
-	return joinToolParts(header, body)
+	return joinToolParts(sty, header, body)
 }
 
 // jobHeader builds a header for job-related tools.
@@ -245,7 +245,31 @@ func jobHeader(sty *styles.Styles, status ToolStatus, action, shellID, descripti
 	return prefix + " " + sty.Tool.JobDescription.Render(truncatedDesc)
 }
 
-// joinToolParts joins header and body with a blank line separator.
-func joinToolParts(header, body string) string {
-	return strings.Join([]string{header, "", body}, "\n")
+// joinToolParts joins a tool header with body output, adding the tree gutter
+// for each body line so tool results visually connect to their header icon.
+func joinToolParts(sty *styles.Styles, header, body string) string {
+	return joinToolPartsPlain(header, renderToolBodyConnector(sty, body))
+}
+
+func joinToolPartsPlain(header, body string) string {
+	if body == "" {
+		return header
+	}
+	return strings.Join([]string{header, body}, "\n")
+}
+
+func renderToolBodyConnector(sty *styles.Styles, body string) string {
+	if body == "" {
+		return body
+	}
+
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		connector := "├─ "
+		if i == len(lines)-1 {
+			connector = "╰─ "
+		}
+		lines[i] = "  " + sty.Tool.Connector.Render(connector) + line
+	}
+	return strings.Join(lines, "\n")
 }

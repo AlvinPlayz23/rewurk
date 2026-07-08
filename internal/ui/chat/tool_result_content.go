@@ -41,13 +41,14 @@ func looksLikeMarkdown(content string) bool {
 }
 
 func renderToolResultTextContent(sty *styles.Styles, content string, widths toolResultContentWidths, expanded bool) string {
+	bodyWidth := max(1, widths.Body-toolBodyLeftPaddingTotal)
 	var result json.RawMessage
 	if err := json.Unmarshal([]byte(content), &result); err == nil {
 		prettyResult, err := json.MarshalIndent(result, "", "  ")
 		if err == nil {
 			return sty.Tool.Body.Render(toolOutputCodeContent(sty, "result.json", string(prettyResult), 0, widths.Body, expanded))
 		}
-		return sty.Tool.Body.Render(toolOutputPlainContent(sty, content, widths.Body, expanded))
+		return sty.Tool.Body.Render(toolOutputPlainContent(sty, content, bodyWidth, expanded))
 	}
 	if diffdetect.IsUnifiedDiff(content) {
 		return toolOutputDiffContentFromUnified(sty, content, widths.Diff, expanded)
@@ -55,5 +56,5 @@ func renderToolResultTextContent(sty *styles.Styles, content string, widths tool
 	if looksLikeMarkdown(content) {
 		return sty.Tool.Body.Render(toolOutputCodeContent(sty, "result.md", content, 0, widths.Body, expanded))
 	}
-	return sty.Tool.Body.Render(toolOutputPlainContent(sty, content, widths.Body, expanded))
+	return sty.Tool.Body.Render(toolOutputPlainContent(sty, content, bodyWidth, expanded))
 }

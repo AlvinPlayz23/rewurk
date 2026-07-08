@@ -748,6 +748,19 @@
           ],
           "description": "Diff mode for the TUI interface"
         },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "purple",
+            "midnight",
+            "forest",
+            "amber",
+            "light"
+          ],
+          "description": "Theme for the TUI interface. Use auto to follow provider defaults.",
+          "default": "auto"
+        },
         "completions": {
           "$ref": "#/$defs/Completions",
           "description": "Completions UI options"

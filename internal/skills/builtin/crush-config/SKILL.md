@@ -187,7 +187,7 @@ reviewed.
 {
   "options": {
     "skills_paths": ["./skills"],
-    "disabled_tools": ["bash", "sourcegraph"],
+    "disabled_tools": ["bash", "fetch"],
     "disabled_skills": ["crush-config"],
     "tui": {
       "compact_mode": false,
@@ -358,7 +358,7 @@ When multiple hooks match, their decisions are aggregated:
 ```json
 {
   "permissions": {
-    "allowed_tools": ["read", "ls", "grep", "edit"]
+    "allowed_tools": ["read", "grep", "edit"]
   }
 }
 ```

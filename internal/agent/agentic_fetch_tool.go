@@ -169,8 +169,7 @@ func (c *coordinator) agenticFetchTool(_ context.Context, client *http.Client) (
 				webSearchTool,
 				tools.NewGlobTool(tmpDir, c.cfg.Config().Tools.Glob),
 				tools.NewGrepTool(tmpDir, c.cfg.Config().Tools.Grep),
-				tools.NewSourcegraphTool(client),
-				tools.NewViewTool(c.lspManager, c.permissions, c.filetracker, nil, tmpDir),
+				tools.NewReadTool(c.lspManager, c.permissions, c.filetracker, nil, tmpDir),
 			}
 
 			// Sub-agent tools run without hook interception. The top-level

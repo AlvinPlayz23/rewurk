@@ -59,6 +59,7 @@ func TestRenderToolResultTextContent(t *testing.T) {
 	sty := styles.CharmtonePantera()
 	styPtr := &sty
 	widths := toolResultContentWidths{Body: 80, Diff: 82}
+	bodyWidth := max(1, widths.Body-toolBodyLeftPaddingTotal)
 
 	t.Run("json branch", func(t *testing.T) {
 		t.Parallel()
@@ -107,7 +108,7 @@ func TestRenderToolResultTextContent(t *testing.T) {
 	t.Run("plain branch", func(t *testing.T) {
 		t.Parallel()
 		content := "plain text"
-		expected := styPtr.Tool.Body.Render(toolOutputPlainContent(styPtr, content, widths.Body, false))
+		expected := styPtr.Tool.Body.Render(toolOutputPlainContent(styPtr, content, bodyWidth, false))
 		got := renderToolResultTextContent(styPtr, content, widths, false)
 		if got != expected {
 			t.Fatal("renderToolResultTextContent() did not choose plain rendering")

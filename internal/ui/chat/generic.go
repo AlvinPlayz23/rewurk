@@ -54,20 +54,18 @@ func (g *GenericToolRenderContext) RenderTool(sty *styles.Styles, width int, opt
 	}
 
 	if earlyState, ok := toolEarlyStateContent(sty, opts, cappedWidth); ok {
-		return joinToolParts(header, earlyState)
+		return joinToolParts(sty, header, earlyState)
 	}
 
 	if !opts.HasResult() || opts.Result.Content == "" {
 		return header
 	}
 
-	bodyWidth := cappedWidth - toolBodyLeftPaddingTotal
-
 	if opts.Result.Data != "" && strings.HasPrefix(opts.Result.MIMEType, "image/") {
 		body := sty.Tool.Body.Render(toolOutputImageContent(sty, opts.Result.Data, opts.Result.MIMEType))
-		return joinToolParts(header, body)
+		return joinToolParts(sty, header, body)
 	}
 
-	body := renderToolResultTextContent(sty, opts.Result.Content, toolResultContentWidths{Body: bodyWidth, Diff: cappedWidth}, opts.ExpandedContent)
-	return joinToolParts(header, body)
+	body := renderToolResultTextContent(sty, opts.Result.Content, toolResultContentWidths{Body: cappedWidth, Diff: cappedWidth}, opts.ExpandedContent)
+	return joinToolParts(sty, header, body)
 }
