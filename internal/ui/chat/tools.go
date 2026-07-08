@@ -95,6 +95,7 @@ type ToolRenderOpts struct {
 	Anim            *anim.Anim
 	ExpandedContent bool
 	Compact         bool
+	NoIcon          bool
 	IsSpinning      bool
 	Status          ToolStatus
 }
@@ -150,6 +151,8 @@ type baseToolMessageItem struct {
 	hasCappedWidth bool
 	// isCompact indicates this tool should render in compact mode.
 	isCompact bool
+	// isNoIcon suppresses the status icon in the tool header (subagent nested renders).
+	isNoIcon bool
 	// spinningFunc allows tools to override the default spinning logic.
 	// If nil, uses the default: !toolCall.Finished && !canceled.
 	spinningFunc SpinningFunc
@@ -320,6 +323,7 @@ func (t *baseToolMessageItem) RawRender(width int) string {
 			Anim:            t.anim,
 			ExpandedContent: t.expandedContent,
 			Compact:         t.isCompact,
+			NoIcon:          t.isNoIcon,
 			IsSpinning:      t.isSpinning(),
 			Status:          t.computeStatus(),
 		})
@@ -600,13 +604,19 @@ func toolParamList(sty *styles.Styles, params []string, width int, opts *ToolRen
 // When opts.ExpandedContent is true, long parameters wrap instead of truncating.
 func toolHeader(sty *styles.Styles, status ToolStatus, name string, width int, opts *ToolRenderOpts, params ...string) string {
 	nested := opts != nil && opts.Compact
-	icon := toolIcon(sty, status)
+	noIcon := opts != nil && opts.NoIcon
 	nameStyle := sty.Tool.NameNormal
 	if nested {
 		nameStyle = sty.Tool.NameNested
 	}
 	toolName := nameStyle.Render(name)
-	prefix := fmt.Sprintf("%s %s ", icon, toolName)
+	var prefix string
+	if noIcon {
+		prefix = toolName + " "
+	} else {
+		icon := toolIcon(sty, status)
+		prefix = fmt.Sprintf("%s %s ", icon, toolName)
+	}
 	prefixWidth := lipgloss.Width(prefix)
 	remainingWidth := width - prefixWidth
 	paramsStr := toolParamList(sty, params, remainingWidth, opts)

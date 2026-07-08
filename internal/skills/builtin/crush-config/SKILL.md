@@ -209,7 +209,7 @@ reviewed.
 > The following skill paths are loaded by default and DO NOT NEED to be added to `skills_paths`:
 > `.agents/skills`, `.crush/skills`, `.claude/skills`, `.cursor/skills`
 
-Other options: `context_paths`, `progress`, `disable_notifications`, `disable_auto_summarize`, `disable_metrics`, `disable_provider_auto_update`, `disable_default_providers`, `data_directory`, `initialize_as`.
+Other options: `context_paths`, `progress`, `notification_style`, `disable_auto_summarize`, `disable_metrics`, `disable_provider_auto_update`, `disable_default_providers`, `data_directory`, `initialize_as`.
 
 ## User-Invocable Skills
 

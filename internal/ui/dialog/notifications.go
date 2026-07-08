@@ -29,7 +29,6 @@ type NotificationStyle struct {
 // AllNotificationStyles lists all available notification styles in order.
 var AllNotificationStyles = []NotificationStyle{
 	{ID: "auto", Title: "Auto", Description: "Automatically detect the best backend"},
-	{ID: "native", Title: "Native", Description: "Use system notifications (macOS/Linux/Windows)"},
 	{ID: "osc", Title: "OSC", Description: "Use terminal OSC escape sequences"},
 	{ID: "bell", Title: "Bell", Description: "Use terminal bell character"},
 	{ID: "disabled", Title: "Disabled", Description: "Turn off notifications"},

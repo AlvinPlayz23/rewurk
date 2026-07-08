@@ -1,5 +1,68 @@
 # Changelog
 
+## Removed IPC Socket And Server Mode
+
+- Removed `crush server` subcommand and the `--host` persistent flag.
+- Removed `CRUSH_CLIENT_SERVER` environment variable gate — all commands now run in local in-process mode only.
+- Removed socket auto-start, stale-socket detection, version-mismatch restart, and `spawnAndWaitReady` logic from the CLI.
+- Removed the server-streaming `runNonInteractive` event loop from `crush run` — non-interactive runs now use the built-in local `App.RunNonInteractive`.
+- Converted `login` and `logout` commands to use local workspace config mutations instead of the server client.
+- Removed `clientserverrace` regression test package.
+
+Changed files:
+
+- `internal/cmd/root.go`
+- `internal/cmd/run.go`
+- `internal/cmd/login.go`
+- `internal/cmd/logout.go`
+
+Deleted files:
+
+- `internal/cmd/server.go`
+- `internal/cmd/server_windows.go`
+- `internal/cmd/server_other.go`
+- `internal/cmd/run_stream_test.go`
+- `internal/cmd/clientserverrace/race_test.go`
+
+Validation:
+
+- Ran `go build ./...` successfully.
+- Ran `go run . --help` to verify `server` subcommand and `--host` flag are gone.
+
+## Removed Native Desktop Notification Backend
+
+- Removed the `beeep` native desktop notification backend and its dependency (`github.com/gen2brain/beeep`).
+- Removed `NativeBackend` which sent OS-level popup notifications via `beeep`.
+- Removed `runtime.GOOS` auto-detection path that selected native notifications for non-macOS local sessions.
+- Local sessions now use OSC terminal-based notifications instead of native popups.
+- Removed `"native"` from the notification style picker dialog and schema enum.
+- Updated config schema, README docs, and skill docs to reflect remaining options (`auto`, `osc`, `bell`, `disabled`).
+- Removed deprecated `disable_notifications` reference in favor of `notification_style`.
+
+Changed files:
+
+- `internal/ui/notification/native.go` (deleted)
+- `internal/ui/notification/notification.go`
+- `internal/ui/notification/notification_test.go`
+- `internal/ui/notification/icon_darwin.go`
+- `internal/ui/model/ui.go`
+- `internal/ui/dialog/notifications.go`
+- `internal/config/config.go`
+- `schema.json`
+- `README.md`
+- `internal/skills/builtin/crush-config/SKILL.md`
+- `go.mod`
+- `go.sum`
+
+Deleted files:
+
+- `internal/ui/notification/native.go`
+
+Validation:
+
+- Ran `go mod tidy` successfully.
+- Ran `go test ./internal/ui/notification ./internal/ui/dialog ./internal/ui/model` successfully.
+
 ## Removed Built-In Tools
 
 - Removed the `sourcegraph` tool and its Sourcegraph API client.

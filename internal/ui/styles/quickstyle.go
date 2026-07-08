@@ -673,7 +673,7 @@ func quickStyle(o quickStyleOpts) Styles {
 
 	// Agent task styles
 	s.Tool.AgentTaskTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.infoMoreSubtle).Foreground(o.onPrimary)
-	s.Tool.AgentPrompt = muted
+	s.Tool.AgentPrompt = base.Italic(true).Foreground(o.infoMostSubtle)
 
 	// Agentic fetch styles
 	s.Tool.AgenticFetchPromptTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.success).Foreground(o.separator)

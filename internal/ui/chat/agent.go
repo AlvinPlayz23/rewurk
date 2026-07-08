@@ -109,9 +109,12 @@ func (a *AgentToolMessageItem) SetNestedTools(tools []ToolMessageItem) {
 
 // AddNestedTool adds a nested tool.
 func (a *AgentToolMessageItem) AddNestedTool(tool ToolMessageItem) {
-	// Mark nested tools as simple (compact) rendering.
+	// Mark nested tools as compact and icon-free for subagent rendering.
 	if s, ok := tool.(Compactable); ok {
 		s.SetCompact(true)
+	}
+	if b, ok := tool.(*baseToolMessageItem); ok {
+		b.isNoIcon = true
 	}
 	a.nestedTools = append(a.nestedTools, tool)
 	a.clearCache()
@@ -143,38 +146,32 @@ func (r *AgentToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 		return header
 	}
 
-	// Build the task tag and prompt.
-	taskTag := sty.Tool.AgentTaskTag.Render("Task")
-	taskTagWidth := lipgloss.Width(taskTag)
+	// Truncate prompt for inline preview.
+	const previewMaxRunes = 40
+	promptPreview := prompt
+	runes := []rune(promptPreview)
+	if len(runes) > previewMaxRunes {
+		promptPreview = string(runes[:previewMaxRunes]) + "..."
+	}
+	header = header + "  " + sty.Tool.AgentPrompt.Render(promptPreview)
 
-	// Calculate remaining width for prompt.
-	remainingWidth := min(cappedWidth-taskTagWidth-3, maxTextWidth-taskTagWidth-3) // -3 for spacing
+	nestedWidth := max(1, cappedWidth-5)
 
-	promptText := sty.Tool.AgentPrompt.Width(remainingWidth).Render(prompt)
-
-	header = lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		"",
-		lipgloss.JoinHorizontal(
-			lipgloss.Left,
-			taskTag,
-			" ",
-			promptText,
-		),
-	)
-
-	// Build tree with nested tool calls.
+	// Build tree with nested tool calls (show first 4 only).
 	childTools := tree.Root(header)
 
-	for _, nestedTool := range r.agent.nestedTools {
-		childView := nestedTool.Render(remainingWidth)
+	visibleTools := r.agent.nestedTools
+	if len(visibleTools) > 4 {
+		visibleTools = visibleTools[:4]
+	}
+	for _, nestedTool := range visibleTools {
+		childView := nestedTool.Render(nestedWidth)
 		childTools.Child(childView)
 	}
 
 	// Build parts.
 	var parts []string
-	parts = append(parts, childTools.Enumerator(roundedEnumerator(2, taskTagWidth-5)).String())
+	parts = append(parts, childTools.Enumerator(roundedEnumerator(2, 3)).String())
 
 	// Show animation if still running.
 	if !opts.HasResult() && !opts.IsCanceled() {
@@ -183,10 +180,10 @@ func (r *AgentToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 
 	result := lipgloss.JoinVertical(lipgloss.Left, parts...)
 
-	// Add body content when completed.
-	if opts.HasResult() && opts.Result.Content != "" {
-		body := toolOutputMarkdownContent(sty, opts.Result.Content, max(1, cappedWidth-toolBodyLeftPaddingTotal), opts.ExpandedContent)
-		return joinToolPartsPlain(result, body)
+	// Show a simple completion notice instead of the full result body.
+	if opts.HasResult() {
+		done := sty.Tool.AgentPrompt.Render("Agent completed.")
+		return joinToolPartsPlain(result, done)
 	}
 
 	return result

@@ -584,24 +584,23 @@ disable-model-invocation: true
 
 Skills with `disable-model-invocation` won't appear in the model's available skills list but can still be invoked manually by users.
 
-### Desktop notifications
+### Notifications
 
-Crush sends desktop notifications when a tool call requires permission and when
-the agent finishes its turn. They're only sent when the terminal window isn't
-focused _and_ your terminal supports reporting the focus state.
+Crush can send terminal notifications when a tool call requires permission and
+when the agent finishes its turn. They're only sent when the terminal window
+isn't focused _and_ your terminal supports reporting the focus state.
 
 ```jsonc
 {
   "$schema": "https://charm.land/crush.json",
   "options": {
-    "disable_notifications": false, // default
+    "notification_style": "auto" // auto, osc, bell, disabled
   },
 }
 ```
 
-To disable desktop notifications, set `disable_notifications` to `true` in your
-configuration. On macOS, notifications currently lack icons due to platform
-limitations.
+To disable notifications, set `notification_style` to `"disabled"` in your
+configuration.
 
 ### Initialization
 

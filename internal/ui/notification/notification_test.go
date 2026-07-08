@@ -21,32 +21,6 @@ func TestNoopBackend_Send(t *testing.T) {
 	require.Nil(t, cmd)
 }
 
-func TestNativeBackend_Send(t *testing.T) {
-	t.Parallel()
-
-	backend := notification.NewNativeBackend(nil)
-
-	var capturedTitle, capturedMessage string
-	var capturedIcon any
-	backend.SetNotifyFunc(func(title, message string, icon any) error {
-		capturedTitle = title
-		capturedMessage = message
-		capturedIcon = icon
-		return nil
-	})
-
-	cmd := backend.Send(notification.Notification{
-		Title:   "Hello",
-		Message: "World",
-	})
-	require.NotNil(t, cmd)
-	msg := cmd()
-	require.Nil(t, msg)
-	require.Equal(t, "Hello", capturedTitle)
-	require.Equal(t, "World", capturedMessage)
-	require.Nil(t, capturedIcon)
-}
-
 func extractRawString(t *testing.T, cmd tea.Cmd) string {
 	t.Helper()
 	require.NotNil(t, cmd)
