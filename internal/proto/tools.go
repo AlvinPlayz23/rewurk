@@ -63,25 +63,6 @@ type EditResponseMetadata struct {
 	NewContent string `json:"new_content,omitempty"`
 }
 
-const FetchToolName = "fetch"
-
-// FetchParams represents the parameters for the fetch tool.
-type FetchParams struct {
-	URL     string `json:"url"`
-	Format  string `json:"format"`
-	Timeout int    `json:"timeout,omitempty"`
-}
-
-// FetchPermissionsParams represents the permission parameters for the fetch tool.
-type FetchPermissionsParams = tools.FetchPermissionsParams
-
-// AgenticFetchToolName is the name of the agentic_fetch tool.
-const AgenticFetchToolName = tools.AgenticFetchToolName
-
-// AgenticFetchPermissionsParams represents the permission parameters for the
-// agentic_fetch tool.
-type AgenticFetchPermissionsParams = tools.AgenticFetchPermissionsParams
-
 const GlobToolName = "glob"
 
 // GlobParams represents the parameters for the glob tool.

@@ -288,7 +288,7 @@ After significant changes:
 </testing>
 
 <tool_usage>
-- Default to using tools (ls, grep, view, agent, tests, web_fetch, etc.) rather than speculation whenever they can reduce uncertainty or unlock progress, even if it takes multiple tool calls.
+- Default to using tools (ls, grep, view, agent, tests, web_search, etc.) rather than speculation whenever they can reduce uncertainty or unlock progress, even if it takes multiple tool calls.
 - Search before assuming
 - Read files before editing
 - Always use absolute paths for file operations (editing, reading, writing)
@@ -296,7 +296,7 @@ After significant changes:
 - Run tools in parallel when safe (no dependencies)
 - When making multiple independent bash calls, send them in a single message with multiple tool calls for parallel execution
 - Summarize tool output for user (they don't see it)
-- Never use `curl` through the bash tool it is not allowed use the fetch tool instead.
+- Never use `curl` through the bash tool; it is not allowed. Use web_search when search results are sufficient.
 - Only use the tools you know exist.
 
 <bash_commands>

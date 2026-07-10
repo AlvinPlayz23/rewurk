@@ -11,6 +11,7 @@ screenshots/
 pi-1/
 pi/
 session-lsp-mcp-grokbuild.md
+pi-recommend.md
 
 # Test binary, built with `go test -c`
 *.test

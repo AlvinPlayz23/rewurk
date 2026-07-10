@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/crush/internal/permission"
 	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/shell"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,13 +42,13 @@ func (m *mockBashPermissionService) SubscribeNotifications(ctx context.Context) 
 	return make(<-chan pubsub.Event[permission.PermissionNotification])
 }
 
-func TestBashTool_DefaultAutoBackgroundThreshold(t *testing.T) {
+func TestBashTool_SynchronousExecution(t *testing.T) {
 	workingDir := t.TempDir()
 	tool := newBashToolForTest(workingDir)
 	ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
 
 	resp := runBashTool(t, tool, ctx, BashParams{
-		Description: "default threshold",
+		Description: "synchronous execution",
 		Command:     "echo done",
 	})
 
@@ -59,28 +58,6 @@ func TestBashTool_DefaultAutoBackgroundThreshold(t *testing.T) {
 	require.False(t, meta.Background)
 	require.Empty(t, meta.ShellID)
 	require.Contains(t, meta.Output, "done")
-}
-
-func TestBashTool_CustomAutoBackgroundThreshold(t *testing.T) {
-	workingDir := t.TempDir()
-	tool := newBashToolForTest(workingDir)
-	ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
-
-	resp := runBashTool(t, tool, ctx, BashParams{
-		Description:         "custom threshold",
-		Command:             "sleep 1.5 && echo done",
-		AutoBackgroundAfter: 1,
-	})
-
-	require.False(t, resp.IsError)
-	var meta BashResponseMetadata
-	require.NoError(t, json.Unmarshal([]byte(resp.Metadata), &meta))
-	require.True(t, meta.Background)
-	require.NotEmpty(t, meta.ShellID)
-	require.Contains(t, resp.Content, "moved to background")
-
-	bgManager := shell.GetBackgroundShellManager()
-	require.NoError(t, bgManager.Kill(meta.ShellID))
 }
 
 type recordingPermissionService struct {

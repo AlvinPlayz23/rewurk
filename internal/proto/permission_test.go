@@ -28,10 +28,9 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 			name:     "bash",
 			toolName: tools.BashToolName,
 			params: tools.BashPermissionsParams{
-				Description:     "list files",
-				Command:         "ls -la",
-				WorkingDir:      "/tmp",
-				RunInBackground: false,
+				Description: "list files",
+				Command:     "ls -la",
+				WorkingDir:  "/tmp",
 			},
 			assert: func(t *testing.T, got any) {
 				v, ok := got.(tools.BashPermissionsParams)
@@ -97,33 +96,6 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 				v, ok := got.(tools.ReadPermissionsParams)
 				require.True(t, ok, "params must decode as tools.ReadPermissionsParams, got %T", got)
 				require.Equal(t, "/tmp/x.go", v.FilePath)
-			},
-		},
-		{
-			name:     "fetch",
-			toolName: tools.FetchToolName,
-			params: tools.FetchPermissionsParams{
-				URL:    "https://example.com",
-				Format: "text",
-			},
-			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.FetchPermissionsParams)
-				require.True(t, ok, "params must decode as tools.FetchPermissionsParams, got %T", got)
-				require.Equal(t, "https://example.com", v.URL)
-			},
-		},
-		{
-			name:     "agentic_fetch",
-			toolName: tools.AgenticFetchToolName,
-			params: tools.AgenticFetchPermissionsParams{
-				URL:    "https://example.com",
-				Prompt: "summarize this page",
-			},
-			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.AgenticFetchPermissionsParams)
-				require.True(t, ok, "params must decode as tools.AgenticFetchPermissionsParams, got %T", got)
-				require.Equal(t, "https://example.com", v.URL)
-				require.Equal(t, "summarize this page", v.Prompt)
 			},
 		},
 	}

@@ -3,12 +3,14 @@ package tools
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"charm.land/fantasy"
+	"github.com/charmbracelet/crush/internal/permission"
 )
 
 //go:embed web_search.md.tpl
@@ -19,8 +21,17 @@ var webSearchDescriptionTpl = template.Must(
 		Parse(string(webSearchDescriptionTmpl)),
 )
 
-// NewWebSearchTool creates a web search tool for sub-agents (no permissions needed).
-func NewWebSearchTool(client *http.Client) fantasy.AgentTool {
+// WebSearchToolName is the name of the web_search tool.
+const WebSearchToolName = "web_search"
+
+// WebSearchParams defines the parameters for the web_search tool.
+type WebSearchParams struct {
+	Query      string `json:"query" description:"The search query to find information on the web"`
+	MaxResults int    `json:"max_results,omitempty" description:"Maximum number of results to return (default: 10, max: 20)"`
+}
+
+// NewWebSearchTool creates a web search tool.
+func NewWebSearchTool(permissions permission.Service, workingDir string, client *http.Client) fantasy.AgentTool {
 	if client == nil {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.MaxIdleConns = 100
@@ -39,6 +50,26 @@ func NewWebSearchTool(client *http.Client) fantasy.AgentTool {
 		func(ctx context.Context, params WebSearchParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
 			if params.Query == "" {
 				return fantasy.NewTextErrorResponse("query is required"), nil
+			}
+
+			sessionID := GetSessionFromContext(ctx)
+			if sessionID == "" {
+				return fantasy.ToolResponse{}, errors.New("session ID is required for web search")
+			}
+			allowed, err := permissions.Request(ctx, permission.CreatePermissionRequest{
+				SessionID:   sessionID,
+				Path:        workingDir,
+				ToolCallID:  call.ID,
+				ToolName:    WebSearchToolName,
+				Action:      "search",
+				Description: "Search the web for: " + params.Query,
+				Params:      params,
+			})
+			if err != nil {
+				return fantasy.ToolResponse{}, err
+			}
+			if !allowed {
+				return NewPermissionDeniedResponse(), nil
 			}
 
 			maxResults := params.MaxResults

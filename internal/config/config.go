@@ -469,16 +469,13 @@ func allToolNames() []string {
 	return []string{
 		"agent",
 		"bash",
-		"job_output",
-		"job_kill",
 		"edit",
 		"multiedit",
-		"fetch",
-		"agentic_fetch",
 		"glob",
 		"grep",
 		"todos",
 		"read",
+		"web_search",
 		"write",
 	}
 }

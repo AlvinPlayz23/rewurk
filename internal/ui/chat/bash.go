@@ -13,6 +13,20 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type legacyBashParams struct {
+	Command         string `json:"command"`
+	RunInBackground bool   `json:"run_in_background,omitempty"`
+}
+
+type legacyJobParams struct {
+	ShellID string `json:"shell_id"`
+}
+
+type legacyJobResponseMetadata struct {
+	Command     string `json:"command"`
+	Description string `json:"description"`
+}
+
 // -----------------------------------------------------------------------------
 // Bash Tool
 // -----------------------------------------------------------------------------
@@ -44,7 +58,7 @@ func (b *BashToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 		return pendingTool(sty, "Bash", opts.Anim, opts.Compact)
 	}
 
-	var params tools.BashParams
+	var params legacyBashParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		params.Command = "failed to parse command"
 	}
@@ -129,14 +143,14 @@ func (j *JobOutputToolRenderContext) RenderTool(sty *styles.Styles, width int, o
 		return pendingTool(sty, "Job", opts.Anim, opts.Compact)
 	}
 
-	var params tools.JobOutputParams
+	var params legacyJobParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
 	}
 
 	var description string
 	if opts.HasResult() && opts.Result.Metadata != "" {
-		var meta tools.JobOutputResponseMetadata
+		var meta legacyJobResponseMetadata
 		if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil {
 			description = cmp.Or(meta.Description, meta.Command)
 		}
@@ -180,14 +194,14 @@ func (j *JobKillToolRenderContext) RenderTool(sty *styles.Styles, width int, opt
 		return pendingTool(sty, "Job", opts.Anim, opts.Compact)
 	}
 
-	var params tools.JobKillParams
+	var params legacyJobParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
 	}
 
 	var description string
 	if opts.HasResult() && opts.Result.Metadata != "" {
-		var meta tools.JobKillResponseMetadata
+		var meta legacyJobResponseMetadata
 		if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil {
 			description = cmp.Or(meta.Description, meta.Command)
 		}

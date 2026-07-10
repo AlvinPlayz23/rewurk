@@ -514,10 +514,6 @@ func (p *Permissions) renderContent(width int) string {
 		return p.renderWriteContent(width)
 	case tools.MultiEditToolName:
 		return p.renderMultiEditContent(width)
-	case tools.FetchToolName:
-		return p.renderFetchContent(width)
-	case tools.AgenticFetchToolName:
-		return p.renderAgenticFetchContent(width)
 	case tools.ReadToolName:
 		return p.renderViewContent(width)
 	default:
@@ -585,31 +581,6 @@ func (p *Permissions) renderDiff(filePath, oldContent, newContent string, conten
 	}
 
 	return result
-}
-
-func (p *Permissions) renderFetchContent(width int) string {
-	params, ok := p.permission.Params.(tools.FetchPermissionsParams)
-	if !ok {
-		return ""
-	}
-
-	return p.renderContentPanel(params.URL, width)
-}
-
-func (p *Permissions) renderAgenticFetchContent(width int) string {
-	params, ok := p.permission.Params.(tools.AgenticFetchPermissionsParams)
-	if !ok {
-		return ""
-	}
-
-	var content string
-	if params.URL != "" {
-		content = fmt.Sprintf("URL: %s\n\nPrompt: %s", params.URL, params.Prompt)
-	} else {
-		content = fmt.Sprintf("Prompt: %s", params.Prompt)
-	}
-
-	return p.renderContentPanel(content, width)
 }
 
 func (p *Permissions) renderViewContent(width int) string {

@@ -39,7 +39,7 @@ func (f *FetchToolRenderContext) RenderTool(sty *styles.Styles, width int, opts 
 		return pendingTool(sty, "Fetch", opts.Anim, opts.Compact)
 	}
 
-	var params tools.FetchParams
+	var params legacyFetchParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
 	}
@@ -114,7 +114,7 @@ func (w *WebFetchToolRenderContext) RenderTool(sty *styles.Styles, width int, op
 		return pendingTool(sty, "Fetch", opts.Anim, opts.Compact)
 	}
 
-	var params tools.WebFetchParams
+	var params legacyWebFetchParams
 	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
 		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
 	}

@@ -1,5 +1,38 @@
 # Changelog
 
+## Simplified Built-In Tool Set
+
+- Removed the `fetch`, `job_kill`, and `job_output` tools.
+- Removed the `agentic_fetch` sub-agent and its private `web_fetch`, `web_search`, `glob`, `grep`, and scoped `read` tool set.
+- Promoted `web_search` to an independent, permission-checked top-level tool.
+- Removed background and automatic background execution from `bash` so commands cannot become unmanageable after removal of the job tools.
+- Removed the obsolete fetch prompts, protocol types, tests, HTML conversion dependencies, and related configuration entries.
+- Retained legacy chat rendering for removed tools so existing saved sessions remain readable.
+- Updated agent instructions, hook documentation, permission handling, and tool registry tests for the reduced tool set.
+
+Deleted files:
+
+- `internal/agent/agentic_fetch_tool.go`
+- `internal/agent/templates/agentic_fetch.md`
+- `internal/agent/templates/agentic_fetch_prompt.md.tpl`
+- `internal/agent/tools/fetch.go`
+- `internal/agent/tools/fetch.md.tpl`
+- `internal/agent/tools/fetch_helpers.go`
+- `internal/agent/tools/fetch_types.go`
+- `internal/agent/tools/job_kill.go`
+- `internal/agent/tools/job_kill.md`
+- `internal/agent/tools/job_output.go`
+- `internal/agent/tools/job_output.md`
+- `internal/agent/tools/job_test.go`
+- `internal/agent/tools/web_fetch.go`
+- `internal/agent/tools/web_fetch.md.tpl`
+
+Validation:
+
+- Ran `go build .` successfully.
+- Ran the agent, tool, protocol, and relevant UI test suites successfully.
+- Ran focused tool-registry configuration tests successfully.
+
 ## Removed IPC Socket And Server Mode
 
 - Removed `crush server` subcommand and the `--host` persistent flag.
