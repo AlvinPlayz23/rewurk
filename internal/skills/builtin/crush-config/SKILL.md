@@ -1,6 +1,6 @@
 ---
 name: crush-config
-description: Use when the user needs help configuring Crush — working with crush.json, setting up providers, configuring LSPs, adding MCP servers, managing skills or permissions, or changing Crush behavior.
+description: Use when the user needs help configuring Crush — working with crush.json, setting up providers, managing skills or permissions, or changing Crush behavior.
 ---
 
 # Crush Configuration
@@ -18,8 +18,6 @@ Crush uses JSON configuration files with the following priority (highest to lowe
   "$schema": "https://charm.land/crush.json",
   "models": {},
   "providers": {},
-  "mcp": {},
-  "lsp": {},
   "hooks": {},
   "options": {},
   "permissions": {},
@@ -58,8 +56,6 @@ fails loudly at load time with your message.
 | Provider `api_key`, `base_url`, `api_endpoint`      | yes       |
 | Provider `extra_headers`                            | yes       |
 | Provider `extra_body`                               | **no**    |
-| MCP `command`, `args`, `env`, `headers`, `url`      | yes       |
-| LSP `command`, `args`, `env`                        | yes       |
 | Hook `command`                                      | runs via `sh -c`, not the resolver |
 
 `extra_body` is a JSON passthrough. If you need env-driven values in
@@ -72,7 +68,7 @@ When a header value resolves to the empty string (unset variable,
 `$(echo)`, or literal `""`), the header is omitted from the
 outgoing request. This keeps optional env-gated headers like
 `"OpenAI-Organization": "$OPENAI_ORG_ID"` working cleanly when the
-var isn't set. Applies to MCP `headers` and provider `extra_headers`.
+var isn't set. Applies to provider `extra_headers`.
 
 ### Security note
 
@@ -85,7 +81,6 @@ reviewed.
 
 - Add a custom provider: add an entry under `providers` with `type`, `base_url`, `api_key`, and `models`.
 - Disable a builtin or local skill: add the skill name to `options.disabled_skills`.
-- Add an MCP server: add an entry under `mcp` with `type` and either `command` (stdio) or `url` (http/sse).
 
 ## Model Selection
 
@@ -135,52 +130,6 @@ reviewed.
 - `extra_body` is a JSON passthrough and is **not** expanded.
 - Additional fields: `disable`, `system_prompt_prefix`, `extra_headers`, `extra_body`, `provider_options`.
 
-## LSP Configuration
-
-```json
-{
-  "lsp": {
-    "go": {
-      "command": "gopls",
-      "env": { "GOPATH": "$HOME/go" }
-    },
-    "typescript": {
-      "command": "typescript-language-server",
-      "args": ["--stdio"]
-    }
-  }
-}
-```
-
-- `command` (required), `args`, `env` cover most setups.
-- `command`, `args`, and `env` values are shell-expanded (see [Shell Expansion](#shell-expansion)).
-- Additional fields: `disabled`, `filetypes`, `root_markers`, `init_options`, `options`, `timeout`.
-
-## MCP Servers
-
-```json
-{
-  "mcp": {
-    "filesystem": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/mcp-server.js"]
-    },
-    "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer $GH_PAT"
-      }
-    }
-  }
-}
-```
-
-- `type` (required): `stdio`, `sse`, or `http`
-- `command`, `args`, `env`, `headers`, and `url` are shell-expanded (see [Shell Expansion](#shell-expansion)).
-- Additional fields: `env`, `disabled`, `disabled_tools`, `timeout`.
-
 ## Options
 
 ```json
@@ -194,9 +143,7 @@ reviewed.
       "diff_mode": "unified",
       "transparent": false
     },
-    "auto_lsp": true,
     "debug": false,
-    "debug_lsp": false,
     "attribution": {
       "trailer_style": "assisted-by",
       "generated_with": true

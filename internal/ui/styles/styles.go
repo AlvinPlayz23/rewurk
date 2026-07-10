@@ -48,10 +48,10 @@ const (
 	ScrollbarThumb string = "┃"
 	ScrollbarTrack string = "│"
 
-	LSPErrorIcon   string = "E"
-	LSPWarningIcon string = "W"
-	LSPInfoIcon    string = "I"
-	LSPHintIcon    string = "H"
+	ErrorIcon   string = "E"
+	WarningIcon string = "W"
+	InfoIcon    string = "I"
+	HintIcon    string = "H"
 )
 
 const (
@@ -188,14 +188,6 @@ type Styles struct {
 		Accent  lipgloss.Style
 	}
 
-	// LSP
-	LSP struct {
-		ErrorDiagnostic   lipgloss.Style
-		WarningDiagnostic lipgloss.Style
-		HintDiagnostic    lipgloss.Style
-		InfoDiagnostic    lipgloss.Style
-	}
-
 	// Sidebar
 	Sidebar struct {
 		SessionTitle lipgloss.Style // Current session title at top of sidebar
@@ -217,11 +209,11 @@ type Styles struct {
 		HypercreditText      lipgloss.Style // Remaining Hypercredits text
 	}
 
-	// Resource styles the LSP/MCP/skills sidebar lists: their heading,
+	// Resource styles the skills sidebar list: its heading,
 	// each row's status icon, name, status text, and truncation hints.
 	Resource struct {
-		Heading         lipgloss.Style // Section header ("LSPs", "MCPs", "Skills")
-		Name            lipgloss.Style // Resource name (e.g. "gopls")
+		Heading         lipgloss.Style // Section header ("Skills")
+		Name            lipgloss.Style // Resource name
 		StatusText      lipgloss.Style // Row status description (e.g. "starting...")
 		OfflineIcon     lipgloss.Style // Offline/unstarted/stopped status icon
 		DisabledIcon    lipgloss.Style // Disabled status icon
@@ -360,11 +352,6 @@ type Styles struct {
 		TodoStatusNote     lipgloss.Style // " · completed N" / " · starting task" trailing note
 		TodoItem           lipgloss.Style // Default body text for todo list items
 		TodoJustStarted    lipgloss.Style // Text of the just-started todo in tool-call bodies
-
-		// MCP tools
-		MCPName     lipgloss.Style // The mcp name
-		MCPToolName lipgloss.Style // The mcp tool name
-		MCPArrow    lipgloss.Style // The mcp arrow icon
 
 		// Images and external resources
 		ResourceLoadedText      lipgloss.Style

@@ -16,14 +16,6 @@ type FileCompletionValue struct {
 	Path string
 }
 
-// ResourceCompletionValue represents a MCP resource completion value.
-type ResourceCompletionValue struct {
-	MCPName  string
-	URI      string
-	Title    string
-	MIMEType string
-}
-
 // CommandCompletionValue represents a slash command completion value.
 type CommandCompletionValue struct {
 	Alias  string

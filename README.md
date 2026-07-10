@@ -16,8 +16,6 @@
 - **Multi-Model:** choose from a wide range of LLMs or add your own via OpenAI- or Anthropic-compatible APIs
 - **Flexible:** switch LLMs mid-session while preserving context
 - **Session-Based:** maintain multiple work sessions and contexts per project
-- **LSP-Enhanced:** Crush uses LSPs for additional context, just like you do
-- **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Works Everywhere:** first-class support in every terminal on macOS, Linux, Windows (PowerShell and WSL), Android, FreeBSD, OpenBSD, and NetBSD
 - **Industrial Grade:** built on the Charm ecosystem, powering 25k+ applications, from leading open source projects to business-critical infrastructure
 
@@ -105,10 +103,6 @@ You can use these modules directly in your flake by importing them from NUR. Sin
                     }
                   ];
                 };
-              };
-              lsp = {
-                go = { command = "gopls"; enabled = true; };
-                nix = { command = "nil"; enabled = true; };
               };
               options = {
                 context_paths = [ "/etc/nixos/configuration.nix" ];
@@ -268,103 +262,6 @@ $HOME/.local/share/crush/crush.json
 > - `CRUSH_GLOBAL_CONFIG`
 > - `CRUSH_GLOBAL_DATA`
 
-### LSPs
-
-Crush can use LSPs for additional context to help inform its decisions, just
-like you would. LSPs can be added manually like so:
-
-```json
-{
-  "$schema": "https://charm.land/crush.json",
-  "lsp": {
-    "go": {
-      "command": "gopls",
-      "env": {
-        "GOTOOLCHAIN": "go1.24.5"
-      }
-    },
-    "typescript": {
-      "command": "typescript-language-server",
-      "args": ["--stdio"]
-    },
-    "nix": {
-      "command": "nil"
-    }
-  }
-}
-```
-
-### MCPs
-
-Crush also supports Model Context Protocol (MCP) servers through three transport
-types: `stdio` for command-line servers, `http` for HTTP endpoints, and `sse`
-for Server-Sent Events.
-
-Shell-style value expansion (`$VAR`, `${VAR:-default}`, `$(command)`, quoting,
-nesting) works in `command`, `args`, `env`, `headers`, and `url`, so
-file-based secrets work out of the box. You can use values like `"$TOKEN"`
-or `"$(cat /path/to/secret/token)"`. Expansion runs through Crush's embedded
-shell, so the same syntax works on every supported system, Windows included.
-
-Unset variables expand to the empty string by default, matching bash. For
-required credentials, use `${VAR:?message}` so an unset variable fails loudly
-at load time with `message` instead of silently resolving to empty:
-
-```json
-{ "api_key": "${CODEBERG_TOKEN:?set CODEBERG_TOKEN}" }
-```
-
-Headers (both MCP `headers` and provider `extra_headers`) whose value
-resolves to the empty string are dropped from the outgoing request rather
-than sent as `Header:`. That keeps optional env-gated headers like
-`"OpenAI-Organization": "$OPENAI_ORG_ID"` clean when the variable is unset.
-
-Provider `extra_body` is a non-expanding JSON passthrough; put env-driven
-values in `extra_headers` or the provider's `api_key` / `base_url`, all of
-which do expand.
-
-> **Security note:** `crush.json` is trusted code. Any `$(...)` in it runs at
-> load time with your shell's privileges, before the UI appears. Don't launch
-> Crush in a directory whose `crush.json` you haven't reviewed.
-
-```json
-{
-  "$schema": "https://charm.land/crush.json",
-  "mcp": {
-    "filesystem": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/mcp-server.js"],
-      "timeout": 120,
-      "disabled": false,
-      "disabled_tools": ["some-tool-name"],
-      "env": {
-        "NODE_ENV": "production"
-      }
-    },
-    "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "timeout": 120,
-      "disabled": false,
-      "disabled_tools": ["create_issue", "create_pull_request"],
-      "headers": {
-        "Authorization": "Bearer $GH_PAT"
-      }
-    },
-    "streaming-service": {
-      "type": "sse",
-      "url": "https://example.com/mcp/sse",
-      "timeout": 120,
-      "disabled": false,
-      "headers": {
-        "API-Key": "$(echo $API_KEY)"
-      }
-    }
-  }
-}
-```
-
 ### Hooks
 
 Crush has preliminary support for hooks. For details, see
@@ -376,7 +273,7 @@ When Crush is run against a shared backend (for example two TUIs talking to
 the same `crush serve`), clients are grouped into **workspaces** keyed by
 their resolved `--cwd`. Two clients with the same `--cwd` join the same
 underlying workspace, so they share the session list, message history,
-permission queue, LSP, and MCP state.
+permission queue, and agent state.
 
 Joining is implicit: pointing a second client at the same working directory
 attaches it to the existing workspace. Each new invocation, however, starts
@@ -454,8 +351,7 @@ permissions. Use this with care.
     "allowed_tools": [
       "read",
       "grep",
-      "edit",
-      "mcp_context7_get-library-doc"
+      "edit"
     ]
   }
 }
@@ -478,8 +374,6 @@ completely hidden from the agent.
   }
 }
 ```
-
-To disable tools from MCP servers, see the [MCP config section](#mcps).
 
 ### Disabling Skills
 
@@ -855,8 +749,7 @@ config:
 {
   "$schema": "https://charm.land/crush.json",
   "options": {
-    "debug": true,
-    "debug_lsp": true
+    "debug": true
   }
 }
 ```

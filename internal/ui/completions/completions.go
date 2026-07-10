@@ -1,16 +1,13 @@
 package completions
 
 import (
-	"cmp"
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
 	"github.com/charmbracelet/crush/internal/fsext"
 	"github.com/charmbracelet/crush/internal/ui/list"
 	"github.com/charmbracelet/x/ansi"
@@ -40,8 +37,7 @@ type ClosedMsg struct{}
 
 // CompletionItemsLoadedMsg is sent when files have been loaded for completions.
 type CompletionItemsLoadedMsg struct {
-	Files     []FileCompletionValue
-	Resources []ResourceCompletionValue
+	Files []FileCompletionValue
 }
 
 // CommandItemsLoadedMsg is sent when slash command completions are loaded.
@@ -148,40 +144,19 @@ func (c *Completions) KeyMap() KeyMap {
 // Open opens the completions with file items from the filesystem.
 func (c *Completions) Open(depth, limit int) tea.Cmd {
 	return func() tea.Msg {
-		var msg CompletionItemsLoadedMsg
-		var wg sync.WaitGroup
-		wg.Go(func() {
-			msg.Files = loadFiles(depth, limit)
-		})
-		wg.Go(func() {
-			msg.Resources = loadMCPResources()
-		})
-		wg.Wait()
-		return msg
+		return CompletionItemsLoadedMsg{Files: loadFiles(depth, limit)}
 	}
 }
 
-// SetItems sets the files and MCP resources and rebuilds the merged list.
-func (c *Completions) SetItems(files []FileCompletionValue, resources []ResourceCompletionValue) {
-	items := make([]list.FilterableItem, 0, len(files)+len(resources))
+// SetItems sets file completion items.
+func (c *Completions) SetItems(files []FileCompletionValue) {
+	items := make([]list.FilterableItem, 0, len(files))
 
 	// Add files first.
 	for _, file := range files {
 		item := NewCompletionItem(
 			file.Path,
 			file,
-			c.normalStyle,
-			c.focusedStyle,
-			c.matchStyle,
-		)
-		items = append(items, item)
-	}
-
-	// Add MCP resources.
-	for _, resource := range resources {
-		item := NewCompletionItem(
-			resource.MCPName+"/"+cmp.Or(resource.Title, resource.URI),
-			resource,
 			c.normalStyle,
 			c.focusedStyle,
 			c.matchStyle,
@@ -411,11 +386,6 @@ func (c *Completions) selectCurrent(keepOpen bool) tea.Msg {
 	}
 
 	switch item := item.Value().(type) {
-	case ResourceCompletionValue:
-		return SelectionMsg[ResourceCompletionValue]{
-			Value:    item,
-			KeepOpen: keepOpen,
-		}
 	case FileCompletionValue:
 		return SelectionMsg[FileCompletionValue]{
 			Value:    item,
@@ -459,19 +429,4 @@ func loadFiles(depth, limit int) []FileCompletionValue {
 		})
 	}
 	return result
-}
-
-func loadMCPResources() []ResourceCompletionValue {
-	var resources []ResourceCompletionValue
-	for mcpName, mcpResources := range mcp.Resources() {
-		for _, r := range mcpResources {
-			resources = append(resources, ResourceCompletionValue{
-				MCPName:  mcpName,
-				URI:      r.URI,
-				Title:    r.Name,
-				MIMEType: r.MIMEType,
-			})
-		}
-	}
-	return resources
 }

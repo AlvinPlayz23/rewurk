@@ -509,15 +509,6 @@ else
 fi
 ```
 
-### Block all MCP tools
-
-The `command` can be inline. This one-liner matches all MCP tools and blocks
-them:
-
-```jsonc
-{ "matcher": "^mcp_", "command": "echo 'MCP tools are disabled' >&2; exit 2" }
-```
-
 ### Log every tool call
 
 With no `matcher` this fires for every tool. It exits 0 with no stdout so the

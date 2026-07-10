@@ -250,7 +250,7 @@ func (m mockFileTracker) ListReadFiles(ctx context.Context, sessionID string) ([
 
 func newReadToolForTest(workingDir string) fantasy.AgentTool {
 	permissions := &mockReadPermissionService{Broker: pubsub.NewBroker[permission.PermissionRequest]()}
-	return NewReadTool(nil, permissions, mockFileTracker{}, nil, workingDir)
+	return NewReadTool(permissions, mockFileTracker{}, nil, workingDir)
 }
 
 func runReadTool(t *testing.T, tool fantasy.AgentTool, ctx context.Context, params ReadParams) fantasy.ToolResponse {

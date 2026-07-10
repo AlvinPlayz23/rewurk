@@ -182,8 +182,6 @@ func TestConfig_setDefaults(t *testing.T) {
 		require.NotNil(t, cfg.Options.ContextPaths)
 		require.NotNil(t, cfg.Providers)
 		require.NotNil(t, cfg.Models)
-		require.NotNil(t, cfg.LSP)
-		require.NotNil(t, cfg.MCP)
 		require.Equal(t, filepath.Join(workingDir, ".crush"), cfg.Options.DataDirectory)
 		require.Equal(t, "AGENTS.md", cfg.Options.InitializeAs)
 		for _, path := range defaultContextPaths {
@@ -709,7 +707,7 @@ func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
 
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "multiedit", "lsp_references", "fetch", "agentic_fetch", "glob", "todos", "read", "write", "list_mcp_resources", "read_mcp_resource"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "multiedit", "fetch", "agentic_fetch", "glob", "todos", "read", "write"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
@@ -730,7 +728,7 @@ func TestConfig_setupAgentsWithEveryReadOnlyToolDisabled(t *testing.T) {
 	cfg.SetupAgents()
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "edit", "multiedit", "lsp_references", "fetch", "agentic_fetch", "todos", "write", "list_mcp_resources", "read_mcp_resource"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "edit", "multiedit", "fetch", "agentic_fetch", "todos", "write"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
@@ -2022,8 +2020,7 @@ func TestConfig_configureProviders_HyperAPIKeyFromConfigOverrides(t *testing.T) 
 
 // TestConfig_configureProviders_ProviderHeaderResolveError verifies
 // that a failing $(cmd) in a provider header fails the provider load
-// with a clear message that names the offending header. Provider
-// headers share the MCP error contract.
+// with a clear message that names the offending header.
 func TestConfig_configureProviders_ProviderHeaderResolveError(t *testing.T) {
 	knownProviders := []catwalk.Provider{
 		{

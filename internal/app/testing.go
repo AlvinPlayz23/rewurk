@@ -12,7 +12,7 @@ import (
 
 // NewForTest constructs a minimal [App] suitable for in-process tests
 // that need a working event broker and permission service without
-// booting a real config, database, LSP, MCP, or agent coordinator.
+// booting a real config, database, or agent coordinator.
 //
 // The returned App has:
 //
@@ -60,8 +60,7 @@ func NewForTest(ctx context.Context) *App {
 // goroutines. It is safe to call multiple times.
 //
 // Use this in tests instead of [App.Shutdown], which drives a full
-// production shutdown path (database release, LSP teardown, MCP
-// shutdown) that synthetic test apps cannot satisfy.
+// production shutdown path that synthetic test apps cannot satisfy.
 func (app *App) ShutdownForTest() {
 	for _, cleanup := range app.cleanupFuncs {
 		if cleanup != nil {

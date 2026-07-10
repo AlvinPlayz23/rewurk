@@ -110,7 +110,7 @@ type ProviderConfig struct {
 
 	// Extra headers to send with each request to the provider. Values
 	// run through shell expansion at config-load time, so $VAR and
-	// $(cmd) work the same way they do in MCP headers. A header whose
+	// $(cmd) are expanded before requests are made. A header whose
 	// value resolves to the empty string (unset bare $VAR under
 	// lenient nounset, $(echo), or literal "") is omitted from the
 	// outgoing request rather than sent as "Header:".

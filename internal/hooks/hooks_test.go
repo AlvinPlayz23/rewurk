@@ -371,11 +371,11 @@ func TestRunnerMatcherFiltering(t *testing.T) {
 	t.Run("partial regex match", func(t *testing.T) {
 		t.Parallel()
 		hooks := validatedHooks(t, []config.HookConfig{
-			{Command: `echo '{"decision":"deny","reason":"mcp blocked"}'`, Matcher: "^mcp_"},
+			{Command: `echo '{"decision":"deny","reason":"tool blocked"}'`, Matcher: "^external_"},
 		})
 		r := NewRunner(hooks, t.TempDir(), t.TempDir())
 
-		result, err := r.Run(context.Background(), EventPreToolUse, "sess", "mcp_github_get_me", `{}`)
+		result, err := r.Run(context.Background(), EventPreToolUse, "sess", "external_get_me", `{}`)
 		require.NoError(t, err)
 		require.Equal(t, DecisionDeny, result.Decision)
 

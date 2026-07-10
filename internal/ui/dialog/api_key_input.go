@@ -251,7 +251,7 @@ func (m *APIKeyInput) inputView() string {
 		ts := t.TextInput
 		ts.Focused.Prompt = ts.Focused.Prompt.Foreground(charmtone.Cherry)
 
-		m.input.Prompt = styles.LSPErrorIcon + " "
+		m.input.Prompt = styles.ErrorIcon + " "
 		m.input.SetStyles(ts)
 		m.input.Focus()
 	}

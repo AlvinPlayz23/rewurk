@@ -15,7 +15,7 @@ func TestHumanizedToolName(t *testing.T) {
 		input string
 		want  string
 	}{
-		{name: "snake case", input: "mcp_github_get", want: "Mcp Github Get"},
+		{name: "snake case", input: "external_github_get", want: "External Github Get"},
 		{name: "kebab case", input: "web-fetch", want: "Web Fetch"},
 		{name: "mixed", input: "job_output-tool", want: "Job Output Tool"},
 	}

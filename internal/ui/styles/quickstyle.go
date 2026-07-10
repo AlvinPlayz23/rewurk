@@ -687,11 +687,6 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.TodoItem = lipgloss.NewStyle().Foreground(o.fgBase)
 	s.Tool.TodoJustStarted = lipgloss.NewStyle().Foreground(o.fgBase)
 
-	// MCP styles
-	s.Tool.MCPName = base.Foreground(o.info)
-	s.Tool.MCPToolName = base.Foreground(o.infoMostSubtle)
-	s.Tool.MCPArrow = base.Foreground(o.info).SetString(ArrowRightIcon)
-
 	// Loading indicators for images, skills
 	s.Tool.ResourceLoadedText = base.Foreground(o.success)
 	s.Tool.ResourceLoadedIndicator = base.Foreground(o.successMostSubtle)
@@ -764,7 +759,7 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Initialize.Content = muted
 	s.Initialize.Accent = base.Foreground(o.successMostSubtle)
 
-	// ResourceGroup (LSP/MCP/skills sidebar lists).
+	// ResourceGroup (skills sidebar list).
 	s.Resource.Heading = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
 	s.Resource.Name = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
 	s.Resource.StatusText = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
@@ -779,12 +774,6 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Resource.RowDescBase = lipgloss.NewStyle().Foreground(o.fgBase)
 	s.Resource.DefaultTitleFg = o.fgMoreSubtle
 	s.Resource.DefaultDescFg = o.fgMostSubtle
-
-	// LSP
-	s.LSP.ErrorDiagnostic = base.Foreground(o.error)
-	s.LSP.WarningDiagnostic = base.Foreground(o.warningSubtle)
-	s.LSP.HintDiagnostic = base.Foreground(o.fgSubtle)
-	s.LSP.InfoDiagnostic = base.Foreground(o.info)
 
 	// Files
 	s.Files.Path = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)

@@ -168,35 +168,6 @@ func TestRefreshOAuthToken_NoEventOnError(t *testing.T) {
 	}
 }
 
-// TestDisableDockerMCP_PublishesConfigChanged seeds a Docker MCP entry
-// directly so DisableDockerMCP has something to remove without needing
-// a running Docker daemon for PrepareDockerMCPConfig's availability
-// probe.
-func TestDisableDockerMCP_PublishesConfigChanged(t *testing.T) {
-	b, ws, evc := newPublishingWorkspace(t)
-
-	// Persist a Docker MCP entry directly via the store so the
-	// downstream DisableDockerMCP path has something to remove.
-	require.NoError(t, ws.Cfg.PersistDockerMCPConfig(config.DockerMCPConfig()))
-	drainEvents(evc, 100*time.Millisecond)
-
-	require.NoError(t, b.DisableDockerMCP(ws.ID))
-	awaitConfigChanged(t, evc, ws.ID)
-}
-
-// drainEvents reads from evc until quiet for the given window. Used
-// to flush events emitted by setup steps so the assertion can target
-// the event from the action under test.
-func drainEvents(evc <-chan pubsub.Event[tea.Msg], quiet time.Duration) {
-	for {
-		select {
-		case <-evc:
-		case <-time.After(quiet):
-			return
-		}
-	}
-}
-
 // TestPublishConfigChanged_NilWorkspaceSafe documents that the helper
 // is safe to call on workspaces without an *app.App (e.g. synthetic
 // test workspaces).

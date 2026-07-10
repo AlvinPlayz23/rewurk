@@ -14,7 +14,7 @@ func TestFilterPrefersExactBasenameStem(t *testing.T) {
 	c.SetItems([]FileCompletionValue{
 		{Path: "internal/ui/chat/search.go"},
 		{Path: "internal/ui/chat/user.go"},
-	}, nil)
+	})
 
 	c.Filter("user")
 
@@ -31,9 +31,9 @@ func TestFilterPrefersBasenamePrefix(t *testing.T) {
 
 	c := New(lipgloss.NewStyle(), lipgloss.NewStyle(), lipgloss.NewStyle())
 	c.SetItems([]FileCompletionValue{
-		{Path: "internal/ui/chat/mcp.go"},
+		{Path: "internal/ui/chat/messages.go"},
 		{Path: "internal/ui/model/chat.go"},
-	}, nil)
+	})
 
 	c.Filter("chat.g")
 
@@ -68,7 +68,7 @@ func TestNamePriorityTier(t *testing.T) {
 		},
 		{
 			name:     "path segment exact",
-			path:     "internal/ui/chat/mcp.go",
+			path:     "internal/ui/chat/messages.go",
 			query:    "chat",
 			wantTier: tierPathSegment,
 		},
@@ -95,8 +95,8 @@ func TestFilterPrefersPathSegmentExact(t *testing.T) {
 	c := New(lipgloss.NewStyle(), lipgloss.NewStyle(), lipgloss.NewStyle())
 	c.SetItems([]FileCompletionValue{
 		{Path: "internal/ui/model/xychat.go"},
-		{Path: "internal/ui/chat/mcp.go"},
-	}, nil)
+		{Path: "internal/ui/chat/messages.go"},
+	})
 
 	c.Filter("chat")
 
@@ -104,5 +104,5 @@ func TestFilterPrefersPathSegmentExact(t *testing.T) {
 	require.NotEmpty(t, filtered)
 	first, ok := filtered[0].(*CompletionItem)
 	require.True(t, ok)
-	require.Equal(t, "internal/ui/chat/mcp.go", first.Text())
+	require.Equal(t, "internal/ui/chat/messages.go", first.Text())
 }

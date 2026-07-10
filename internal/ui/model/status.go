@@ -17,8 +17,6 @@ import (
 const DefaultStatusTTL = 5 * time.Second
 
 type StatusData struct {
-	LSPCount     int
-	MCPCount     int
 	TokenUsed    int
 	TokenMax     int
 	ModelName    string
@@ -97,16 +95,6 @@ func (s *Status) Draw(scr uv.Screen, area uv.Rectangle) {
 	if s.data.TokenMax > 0 {
 		tokenStr := fmt.Sprintf("Tokens: %s / %s", formatTokenCount(s.data.TokenUsed), formatTokenCount(s.data.TokenMax))
 		leftParts = append(leftParts, tokenStr)
-	}
-
-	// LSP count.
-	if s.data.LSPCount > 0 {
-		leftParts = append(leftParts, fmt.Sprintf("LSP: %d active", s.data.LSPCount))
-	}
-
-	// MCP count.
-	if s.data.MCPCount > 0 {
-		leftParts = append(leftParts, fmt.Sprintf("MCP: %d tools", s.data.MCPCount))
 	}
 
 	sep := "  │  "

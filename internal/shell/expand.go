@@ -25,8 +25,8 @@ const maxInnerStderrBytes = 512
 // an internal escape hatch in case the lenient default turns out to be
 // the wrong call.
 //
-// Declared atomic because ExpandValue is invoked concurrently (multiple
-// MCP / LSP / provider loads in flight at startup, hook execution, etc.)
+// Declared atomic because ExpandValue is invoked concurrently during
+// provider loads and hook execution.
 // and an unsynchronised read/write pair is a data race under the Go
 // memory model regardless of test-level happens-before reasoning. The
 // atomic load on the hot path is negligible against the cost of parsing
@@ -63,7 +63,7 @@ func ExpandValue(ctx context.Context, value string, env []string) (string, error
 	// Parsing and running it through the interpreter would produce the
 	// same string at significant cost. Most config values (literal API
 	// keys, fixed URLs) hit this path, which matters because ExpandValue
-	// runs over every provider/MCP/LSP value on each config reload.
+	// runs over every provider value on each config reload.
 	if !strings.ContainsAny(value, "$`\\'\"") {
 		return value, nil
 	}

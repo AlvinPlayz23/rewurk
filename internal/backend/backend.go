@@ -27,7 +27,6 @@ import (
 // Common errors returned by backend operations.
 var (
 	ErrWorkspaceNotFound       = errors.New("workspace not found")
-	ErrLSPClientNotFound       = errors.New("LSP client not found")
 	ErrAgentNotInitialized     = errors.New("agent coordinator not initialized")
 	ErrPathRequired            = errors.New("path is required")
 	ErrInvalidPermissionAction = errors.New("invalid permission action")
@@ -163,7 +162,7 @@ func (w *Workspace) invokeShutdown() {
 //  3. Cancel active coordinator work for runs that already
 //     registered their per-session cancel function.
 //  4. Wait for dispatched agent goroutines to return.
-//  5. Run the embedded [app.App.Shutdown] cleanup (DB, LSP, etc).
+//  5. Run the embedded [app.App.Shutdown] cleanup (DB, etc).
 //
 // CancelAll is idempotent, so the second call inside app.App.Shutdown
 // is harmless; the important guarantee is that cancel -> CancelAll ->

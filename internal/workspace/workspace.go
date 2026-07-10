@@ -10,10 +10,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	mcptools "github.com/charmbracelet/crush/internal/agent/tools/mcp"
 	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/lsp"
 	"github.com/charmbracelet/crush/internal/message"
 	"github.com/charmbracelet/crush/internal/oauth"
 	"github.com/charmbracelet/crush/internal/permission"
@@ -21,34 +19,6 @@ import (
 	"github.com/charmbracelet/crush/internal/session"
 	"github.com/charmbracelet/crush/internal/skills"
 )
-
-// LSPClientInfo holds information about an LSP client's state. This is
-// the frontend-facing type; implementations translate from the
-// underlying app or proto representation.
-type LSPClientInfo struct {
-	Name            string
-	State           lsp.ServerState
-	Error           error
-	DiagnosticCount int
-	ConnectedAt     time.Time
-}
-
-// LSPEventType represents the type of LSP event.
-type LSPEventType string
-
-const (
-	LSPEventStateChanged       LSPEventType = "state_changed"
-	LSPEventDiagnosticsChanged LSPEventType = "diagnostics_changed"
-)
-
-// LSPEvent represents an LSP event forwarded to the TUI.
-type LSPEvent struct {
-	Type            LSPEventType
-	Name            string
-	State           lsp.ServerState
-	Error           error
-	DiagnosticCount int
-}
 
 // AgentModel holds the model information exposed to the UI.
 type AgentModel struct {
@@ -120,12 +90,6 @@ type Workspace interface {
 	// History
 	ListSessionHistory(ctx context.Context, sessionID string) ([]history.File, error)
 
-	// LSP
-	LSPStart(ctx context.Context, path string)
-	LSPStopAll(ctx context.Context)
-	LSPGetStates() map[string]LSPClientInfo
-	LSPGetDiagnosticCounts(name string) lsp.DiagnosticCounts
-
 	// Config (read-only data)
 	Config() *config.Config
 	WorkingDir() string
@@ -147,25 +111,7 @@ type Workspace interface {
 	ListSkills(ctx context.Context) ([]skills.CatalogEntry, error)
 	ReadSkill(ctx context.Context, skillID string) ([]byte, skills.SkillReadResult, error)
 
-	// MCP operations (server-side in client mode)
-	MCPGetStates() map[string]mcptools.ClientInfo
-	MCPRefreshPrompts(ctx context.Context, name string)
-	MCPRefreshResources(ctx context.Context, name string)
-	RefreshMCPTools(ctx context.Context, name string)
-	ReadMCPResource(ctx context.Context, name, uri string) ([]MCPResourceContents, error)
-	GetMCPPrompt(clientID, promptID string, args map[string]string) (string, error)
-	EnableDockerMCP(ctx context.Context) error
-	DisableDockerMCP() error
-
 	// Events
 	Subscribe(program *tea.Program)
 	Shutdown()
-}
-
-// MCPResourceContents holds the contents of an MCP resource.
-type MCPResourceContents struct {
-	URI      string `json:"uri"`
-	MIMEType string `json:"mime_type,omitempty"`
-	Text     string `json:"text,omitempty"`
-	Blob     []byte `json:"blob,omitempty"`
 }

@@ -27,7 +27,6 @@ import (
 	"github.com/charmbracelet/crush/internal/filepathext"
 	"github.com/charmbracelet/crush/internal/fsext"
 	"github.com/charmbracelet/crush/internal/home"
-	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
 	"github.com/qjebbs/go-jsons"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -253,8 +252,7 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 		if len(config.ExtraHeaders) > 0 {
 			maps.Copy(headers, config.ExtraHeaders)
 		}
-		// Provider headers use the same error contract as MCP headers:
-		// a failing $(...) aborts the provider load with a clear
+		// A failing $(...) aborts the provider load with a clear
 		// message, and a header that resolves to the empty string
 		// (unset bare $VAR under lenient nounset, $(echo), or literal
 		// "") is dropped from the outgoing request.
@@ -476,8 +474,8 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 			continue
 		}
 
-		// Custom-provider headers share the MCP error contract; see
-		// the known-provider loop above.
+		// Custom-provider headers follow the known-provider error
+		// contract above.
 		for k, v := range providerConfig.ExtraHeaders {
 			resolved, err := resolver.ResolveValue(v)
 			if err != nil {
@@ -536,16 +534,6 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	if c.RecentModels == nil {
 		c.RecentModels = make(map[SelectedModelType][]SelectedModel)
 	}
-	if c.MCP == nil {
-		c.MCP = make(map[string]MCPConfig)
-	}
-	if c.LSP == nil {
-		c.LSP = make(map[string]LSPConfig)
-	}
-
-	// Apply defaults to LSP configurations
-	c.applyLSPDefaults()
-
 	// Add the default context paths if they are not already present
 	c.Options.ContextPaths = append(slices.Clone(defaultContextPaths), c.Options.ContextPaths...)
 
@@ -589,68 +577,6 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	}
 
 	c.Options.InitializeAs = cmp.Or(c.Options.InitializeAs, defaultInitializeAs)
-}
-
-// powernapDefaults caches the powernap default LSP server catalog. The
-// catalog is static and immutable for the life of the process, but
-// building it (NewManager + LoadDefaults) is expensive and was previously
-// repeated on every config reload. We load it once and only ever read from
-// it via GetServer, so a shared instance is safe.
-var (
-	powernapDefaultsOnce sync.Once
-	powernapDefaults     *powernapConfig.Manager
-)
-
-func lspDefaultsManager() *powernapConfig.Manager {
-	powernapDefaultsOnce.Do(func() {
-		m := powernapConfig.NewManager()
-		// LoadDefaults only fails on malformed embedded defaults, which
-		// would be a build-time bug; treat the manager as usable either
-		// way so a transient error never wedges config loading.
-		_ = m.LoadDefaults()
-		powernapDefaults = m
-	})
-	return powernapDefaults
-}
-
-// applyLSPDefaults applies default values from powernap to LSP configurations
-func (c *Config) applyLSPDefaults() {
-	// Reuse the process-wide default catalog; building it per reload was a
-	// significant chunk of reload latency.
-	configManager := lspDefaultsManager()
-
-	// Apply defaults to each LSP configuration
-	for name, cfg := range c.LSP {
-		// Try to get defaults from powernap based on name or command name.
-		base, ok := configManager.GetServer(name)
-		if !ok {
-			base, ok = configManager.GetServer(cfg.Command)
-			if !ok {
-				continue
-			}
-		}
-		if cfg.Options == nil {
-			cfg.Options = base.Settings
-		}
-		if cfg.InitOptions == nil {
-			cfg.InitOptions = base.InitOptions
-		}
-		if len(cfg.FileTypes) == 0 {
-			cfg.FileTypes = base.FileTypes
-		}
-		if len(cfg.RootMarkers) == 0 {
-			cfg.RootMarkers = base.RootMarkers
-		}
-		cfg.Command = cmp.Or(cfg.Command, base.Command)
-		if len(cfg.Args) == 0 {
-			cfg.Args = base.Args
-		}
-		if len(cfg.Env) == 0 {
-			cfg.Env = base.Environment
-		}
-		// Update the config in the map
-		c.LSP[name] = cfg
-	}
 }
 
 func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (largeModel SelectedModel, smallModel SelectedModel, err error) {

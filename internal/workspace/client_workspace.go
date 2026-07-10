@@ -11,12 +11,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/crush/internal/agent/notify"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
 	"github.com/charmbracelet/crush/internal/client"
 	"github.com/charmbracelet/crush/internal/config"
 	"github.com/charmbracelet/crush/internal/history"
 	"github.com/charmbracelet/crush/internal/log"
-	"github.com/charmbracelet/crush/internal/lsp"
 	"github.com/charmbracelet/crush/internal/message"
 	"github.com/charmbracelet/crush/internal/oauth"
 	"github.com/charmbracelet/crush/internal/permission"
@@ -24,7 +22,6 @@ import (
 	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/charmbracelet/crush/internal/session"
 	"github.com/charmbracelet/crush/internal/skills"
-	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
 )
 
 // ClientWorkspace implements the Workspace interface by delegating all
@@ -362,57 +359,6 @@ func (w *ClientWorkspace) ListSessionHistory(ctx context.Context, sessionID stri
 	return protoToFiles(files), nil
 }
 
-// -- LSP --
-
-func (w *ClientWorkspace) LSPStart(ctx context.Context, path string) {
-	_ = w.client.LSPStart(ctx, w.workspaceID(), path)
-}
-
-func (w *ClientWorkspace) LSPStopAll(ctx context.Context) {
-	_ = w.client.LSPStopAll(ctx, w.workspaceID())
-}
-
-func (w *ClientWorkspace) LSPGetStates() map[string]LSPClientInfo {
-	states, err := w.client.GetLSPs(context.Background(), w.workspaceID())
-	if err != nil {
-		return nil
-	}
-	result := make(map[string]LSPClientInfo, len(states))
-	for k, v := range states {
-		result[k] = LSPClientInfo{
-			Name:            v.Name,
-			State:           v.State,
-			Error:           v.Error,
-			DiagnosticCount: v.DiagnosticCount,
-			ConnectedAt:     v.ConnectedAt,
-		}
-	}
-	return result
-}
-
-func (w *ClientWorkspace) LSPGetDiagnosticCounts(name string) lsp.DiagnosticCounts {
-	diags, err := w.client.GetLSPDiagnostics(context.Background(), w.workspaceID(), name)
-	if err != nil {
-		return lsp.DiagnosticCounts{}
-	}
-	var counts lsp.DiagnosticCounts
-	for _, fileDiags := range diags {
-		for _, d := range fileDiags {
-			switch d.Severity {
-			case protocol.SeverityError:
-				counts.Error++
-			case protocol.SeverityWarning:
-				counts.Warning++
-			case protocol.SeverityInformation:
-				counts.Information++
-			case protocol.SeverityHint:
-				counts.Hint++
-			}
-		}
-	}
-	return counts
-}
-
 // -- Config (read-only) --
 
 func (w *ClientWorkspace) Config() *config.Config {
@@ -534,71 +480,6 @@ func (w *ClientWorkspace) ReadSkill(ctx context.Context, skillID string) ([]byte
 	}, nil
 }
 
-// -- MCP operations --
-
-func (w *ClientWorkspace) MCPGetStates() map[string]mcp.ClientInfo {
-	states, err := w.client.MCPGetStates(context.Background(), w.workspaceID())
-	if err != nil {
-		return nil
-	}
-	result := make(map[string]mcp.ClientInfo, len(states))
-	for k, v := range states {
-		result[k] = mcp.ClientInfo{
-			Name:  v.Name,
-			State: mcp.State(v.State),
-			Error: v.Error,
-			Counts: mcp.Counts{
-				Tools:     v.ToolCount,
-				Prompts:   v.PromptCount,
-				Resources: v.ResourceCount,
-			},
-			ConnectedAt: v.ConnectedAt,
-		}
-	}
-	return result
-}
-
-func (w *ClientWorkspace) MCPRefreshPrompts(ctx context.Context, name string) {
-	_ = w.client.MCPRefreshPrompts(ctx, w.workspaceID(), name)
-}
-
-func (w *ClientWorkspace) MCPRefreshResources(ctx context.Context, name string) {
-	_ = w.client.MCPRefreshResources(ctx, w.workspaceID(), name)
-}
-
-func (w *ClientWorkspace) RefreshMCPTools(ctx context.Context, name string) {
-	_ = w.client.RefreshMCPTools(ctx, w.workspaceID(), name)
-}
-
-func (w *ClientWorkspace) ReadMCPResource(ctx context.Context, name, uri string) ([]MCPResourceContents, error) {
-	contents, err := w.client.ReadMCPResource(ctx, w.workspaceID(), name, uri)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]MCPResourceContents, len(contents))
-	for i, c := range contents {
-		result[i] = MCPResourceContents{
-			URI:      c.URI,
-			MIMEType: c.MIMEType,
-			Text:     c.Text,
-			Blob:     c.Blob,
-		}
-	}
-	return result, nil
-}
-
-func (w *ClientWorkspace) GetMCPPrompt(clientID, promptID string, args map[string]string) (string, error) {
-	return w.client.GetMCPPrompt(context.Background(), w.workspaceID(), clientID, promptID, args)
-}
-
-func (w *ClientWorkspace) EnableDockerMCP(ctx context.Context) error {
-	return w.client.EnableDockerMCP(ctx, w.workspaceID())
-}
-
-func (w *ClientWorkspace) DisableDockerMCP() error {
-	return w.client.DisableDockerMCP(context.Background(), w.workspaceID())
-}
-
 // -- Lifecycle --
 
 func (w *ClientWorkspace) Subscribe(program *tea.Program) {
@@ -643,32 +524,6 @@ func (w *ClientWorkspace) Shutdown() {
 // skills.GetLatestStates see fresh data.
 func (w *ClientWorkspace) translateEvent(ev any) tea.Msg {
 	switch e := ev.(type) {
-	case pubsub.Event[proto.LSPEvent]:
-		return pubsub.Event[LSPEvent]{
-			Type: e.Type,
-			Payload: LSPEvent{
-				Type:            LSPEventType(e.Payload.Type),
-				Name:            e.Payload.Name,
-				State:           e.Payload.State,
-				Error:           e.Payload.Error,
-				DiagnosticCount: e.Payload.DiagnosticCount,
-			},
-		}
-	case pubsub.Event[proto.MCPEvent]:
-		return pubsub.Event[mcp.Event]{
-			Type: e.Type,
-			Payload: mcp.Event{
-				Type:  protoToMCPEventType(e.Payload.Type),
-				Name:  e.Payload.Name,
-				State: mcp.State(e.Payload.State),
-				Error: e.Payload.Error,
-				Counts: mcp.Counts{
-					Tools:     e.Payload.ToolCount,
-					Prompts:   e.Payload.PromptCount,
-					Resources: e.Payload.ResourceCount,
-				},
-			},
-		}
 	case pubsub.Event[proto.PermissionRequest]:
 		return pubsub.Event[permission.PermissionRequest]{
 			Type: e.Type,
@@ -751,21 +606,6 @@ func (w *ClientWorkspace) translateEvent(ev any) tea.Msg {
 	default:
 		slog.Warn("Unknown event type in translateEvent", "type", fmt.Sprintf("%T", ev))
 		return nil
-	}
-}
-
-func protoToMCPEventType(t proto.MCPEventType) mcp.EventType {
-	switch t {
-	case proto.MCPEventStateChanged:
-		return mcp.EventStateChanged
-	case proto.MCPEventToolsListChanged:
-		return mcp.EventToolsListChanged
-	case proto.MCPEventPromptsListChanged:
-		return mcp.EventPromptsListChanged
-	case proto.MCPEventResourcesListChanged:
-		return mcp.EventResourcesListChanged
-	default:
-		return mcp.EventStateChanged
 	}
 }
 

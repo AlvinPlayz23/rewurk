@@ -137,9 +137,7 @@ tool names to specific types:
 | `chat/search.go`      | Glob, Grep                                     |
 | `chat/fetch.go`       | Fetch, WebFetch, WebSearch                     |
 | `chat/agent.go`       | Agent, AgenticFetch                            |
-| `chat/references.go`  | References                                     |
 | `chat/todos.go`       | Todos                                          |
-| `chat/mcp.go`         | MCP tools (`mcp_` prefix)                      |
 | `chat/generic.go`     | Fallback for unrecognized tools                |
 | `chat/assistant.go`   | Assistant messages (thinking, content, errors) |
 | `chat/user.go`        | User messages (input + attachments)            |

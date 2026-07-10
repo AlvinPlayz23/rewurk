@@ -126,7 +126,7 @@ func formatTokensAndCost(t *styles.Styles, tokens, contextWindow int64, cost flo
 	formattedPercentage := t.ModelInfo.TokenPercentage.Render(percentageText)
 	formattedTokens = fmt.Sprintf("%s %s", formattedPercentage, formattedTokens)
 	if percentage > 80 {
-		formattedTokens = fmt.Sprintf("%s %s", styles.LSPWarningIcon, formattedTokens)
+		formattedTokens = fmt.Sprintf("%s %s", styles.WarningIcon, formattedTokens)
 	}
 
 	return fmt.Sprintf("%s %s", formattedTokens, formattedCost)

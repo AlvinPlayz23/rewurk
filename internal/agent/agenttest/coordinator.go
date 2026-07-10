@@ -28,8 +28,8 @@ import (
 // so no request is ever issued. The coder agent's allowed-tools list is
 // cleared to keep tool construction cheap and free of sub-agent wiring.
 //
-// The optional coordinator dependencies (history, filetracker, LSP,
-// notify, runComplete, skills) are nil: run guards the publisher fields
+// The optional coordinator dependencies (history, filetracker, notify,
+// runComplete, skills) are nil: run guards the publisher fields
 // and the cancel-on-entry path never touches the others.
 func NewCoordinator(
 	ctx context.Context,
@@ -70,7 +70,6 @@ func NewCoordinator(
 		sessions,
 		messages,
 		permission.NewPermissionService(workingDir, true, nil),
-		nil,
 		nil,
 		nil,
 		nil,
