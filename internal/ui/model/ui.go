@@ -249,6 +249,7 @@ type UI struct {
 	// Completions state
 	completions              *completions.Completions
 	completionsOpen          bool
+	completionsTrigger       string
 	completionsStartIndex    int
 	completionsQuery         string
 	completionsPositionStart image.Point // x,y where user typed '@'
@@ -1066,6 +1067,10 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.completionsOpen {
 			m.completions.SetItems(msg.Files, msg.Resources)
 		}
+	case completions.CommandItemsLoadedMsg:
+		if m.completionsOpen {
+			m.completions.SetCommandItems(msg.Commands)
+		}
 	case uv.KittyGraphicsEvent:
 		if !bytes.HasPrefix(msg.Payload, []byte("OK")) {
 			slog.Warn("Unexpected Kitty graphics response",
@@ -1195,6 +1200,9 @@ func (m *UI) loadNestedToolCalls(items []chat.MessageItem) {
 					// Mark nested tools as simple (compact) rendering.
 					if simplifiable, ok := nestedToolItem.(chat.Compactable); ok {
 						simplifiable.SetCompact(true)
+					}
+					if hideable, ok := nestedToolItem.(chat.IconHideable); ok {
+						hideable.SetNoIcon(true)
 					}
 					nestedTools = append(nestedTools, nestedToolItem)
 				}
@@ -1427,6 +1435,9 @@ func (m *UI) handleChildSessionMessage(event pubsub.Event[message.Message]) tea.
 			nestedItem := chat.NewToolMessageItem(m.com.Styles, event.Payload.ID, tc, nil, false)
 			if simplifiable, ok := nestedItem.(chat.Compactable); ok {
 				simplifiable.SetCompact(true)
+			}
+			if hideable, ok := nestedItem.(chat.IconHideable); ok {
+				hideable.SetNoIcon(true)
 			}
 			if animatable, ok := nestedItem.(chat.Animatable); ok {
 				if cmd := animatable.StartAnimation(); cmd != nil {
@@ -1758,6 +1769,195 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+func (m *UI) handleCommandAction(action dialog.Action, closeDialog bool) tea.Cmd {
+	var cmds []tea.Cmd
+	closeCommands := func() {
+		if closeDialog {
+			m.dialog.CloseDialog(dialog.CommandsID)
+		}
+	}
+	closeFront := func() {
+		if closeDialog {
+			m.dialog.CloseFrontDialog()
+		}
+	}
+
+	switch msg := action.(type) {
+	case dialog.ActionOpenDialog:
+		closeCommands()
+		if cmd := m.openDialog(msg.DialogID); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	case dialog.ActionToggleYoloMode:
+		yolo := !m.com.Workspace.PermissionSkipRequests()
+		m.com.Workspace.PermissionSetSkipRequests(yolo)
+		m.setEditorPrompt(yolo)
+		closeCommands()
+	case dialog.ActionNewSession:
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
+			break
+		}
+		if cmd := m.newSession(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		closeCommands()
+	case dialog.ActionSummarize:
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
+			break
+		}
+		cmds = append(cmds, func() tea.Msg {
+			err := m.com.Workspace.AgentSummarize(context.Background(), msg.SessionID)
+			if err != nil {
+				return util.ReportError(err)()
+			}
+			return nil
+		})
+		closeCommands()
+	case dialog.ActionToggleHelp:
+		m.status.ToggleHelp()
+		closeCommands()
+	case dialog.ActionExternalEditor:
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is working, please wait..."))
+			break
+		}
+		editorValue := m.textarea.Value()
+		if m.bangMode {
+			editorValue = "!" + editorValue
+		}
+		cmds = append(cmds, m.openEditor(editorValue))
+		closeCommands()
+	case dialog.ActionToggleCompactMode:
+		cmds = append(cmds, m.toggleCompactMode())
+		closeCommands()
+	case dialog.ActionTogglePills:
+		if cmd := m.togglePillsExpanded(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+		closeCommands()
+	case dialog.ActionToggleThinking:
+		cmds = append(cmds, func() tea.Msg {
+			cfg := m.com.Config()
+			if cfg == nil {
+				return util.ReportError(errors.New("configuration not found"))()
+			}
+
+			agentCfg, ok := cfg.Agents[config.AgentCoder]
+			if !ok {
+				return util.ReportError(errors.New("agent configuration not found"))()
+			}
+
+			currentModel := cfg.Models[agentCfg.Model]
+			currentModel.Think = !currentModel.Think
+			if err := m.com.Workspace.UpdatePreferredModel(config.ScopeGlobal, agentCfg.Model, currentModel); err != nil {
+				return util.ReportError(err)()
+			}
+			m.com.Workspace.UpdateAgentModel(context.TODO())
+			status := "disabled"
+			if currentModel.Think {
+				status = "enabled"
+			}
+			return util.NewInfoMsg("Thinking mode " + status)
+		})
+		closeCommands()
+	case dialog.ActionToggleThinkingBlocks:
+		m.showThinkingBlocks = !m.showThinkingBlocks
+		changed := m.chat.SetThinkingBlocksVisible(m.showThinkingBlocks)
+		status := "hidden"
+		if m.showThinkingBlocks {
+			status = "visible"
+		}
+		if !changed {
+			cmds = append(cmds, util.ReportInfo("Thinking blocks already "+status))
+		} else {
+			cmds = append(cmds, util.ReportInfo("Thinking blocks "+status))
+		}
+		closeCommands()
+	case dialog.ActionToggleTransparentBackground:
+		cmds = append(cmds, func() tea.Msg {
+			cfg := m.com.Config()
+			if cfg == nil {
+				return util.ReportError(errors.New("configuration not found"))()
+			}
+
+			isTransparent := cfg.Options != nil && cfg.Options.TUI.Transparent != nil && *cfg.Options.TUI.Transparent
+			newValue := !isTransparent
+			if err := m.com.Workspace.SetConfigField(config.ScopeGlobal, "options.tui.transparent", newValue); err != nil {
+				return util.ReportError(err)()
+			}
+			m.isTransparent = newValue
+
+			status := "disabled"
+			if newValue {
+				status = "enabled"
+			}
+			return util.NewInfoMsg("Transparent background " + status)
+		})
+		closeCommands()
+	case dialog.ActionQuit:
+		cmds = append(cmds, tea.Quit)
+	case dialog.ActionEnableDockerMCP:
+		closeCommands()
+		cmds = append(cmds, m.enableDockerMCP)
+	case dialog.ActionDisableDockerMCP:
+		closeCommands()
+		cmds = append(cmds, m.disableDockerMCP)
+	case dialog.ActionInitializeProject:
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before summarizing session..."))
+			break
+		}
+		cmds = append(cmds, m.initializeProject())
+		closeCommands()
+	case dialog.ActionRunCustomCommand:
+		if len(msg.Arguments) > 0 && msg.Args == nil {
+			closeFront()
+			argsDialog := dialog.NewArguments(
+				m.com,
+				"Custom Command Arguments",
+				"",
+				msg.Arguments,
+				msg,
+			)
+			m.dialog.OpenDialog(argsDialog)
+			break
+		}
+		content := msg.Content
+		if msg.Args != nil {
+			content = substituteArgs(content, msg.Args)
+		}
+		if msg.Skill != nil {
+			content = msg.Skill.FormatInvocation()
+		}
+		cmds = append(cmds, m.sendMessage(content))
+		closeFront()
+	case dialog.ActionAttachSkill:
+		closeFront()
+		cmds = append(cmds, m.attachSkill(msg.ID, msg.Name))
+	case dialog.ActionRunMCPPrompt:
+		if len(msg.Arguments) > 0 && msg.Args == nil {
+			closeFront()
+			title := cmp.Or(msg.Title, "MCP Prompt Arguments")
+			argsDialog := dialog.NewArguments(
+				m.com,
+				title,
+				msg.Description,
+				msg.Arguments,
+				msg,
+			)
+			m.dialog.OpenDialog(argsDialog)
+			break
+		}
+		cmds = append(cmds, m.runMCPPrompt(msg.ClientID, msg.PromptID, msg.Args))
+	default:
+		cmds = append(cmds, util.CmdHandler(msg))
+	}
+
+	return tea.Batch(cmds...)
+}
+
 // substituteArgs replaces $ARG_NAME placeholders in content with actual values.
 func substituteArgs(content string, args map[string]string) string {
 	for name, value := range args {
@@ -2065,8 +2265,16 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 						if !msg.KeepOpen {
 							m.closeCompletions()
 						}
+					case completions.SelectionMsg[completions.CommandCompletionValue]:
+						prevHeight := m.textarea.Height()
+						m.closeCompletions()
+						m.textarea.Reset()
+						if cmd := m.handleTextareaHeightChange(prevHeight); cmd != nil {
+							cmds = append(cmds, cmd)
+						}
+						cmds = append(cmds, m.handleCommandAction(msg.Value.Action, false))
 					case completions.ClosedMsg:
-						m.completionsOpen = false
+						m.closeCompletions()
 					}
 					return tea.Batch(cmds...)
 				}
@@ -2181,10 +2389,14 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				if cmd != nil {
 					cmds = append(cmds, cmd)
 				}
-			case key.Matches(msg, m.keyMap.Editor.Commands) && m.textarea.Value() == "":
-				if cmd := m.openCommandsDialog(); cmd != nil {
+			case (key.Matches(msg, m.keyMap.Editor.Commands) || key.Matches(msg, m.keyMap.Commands)) && strings.TrimSpace(m.textarea.Value()) == "":
+				prevHeight := m.textarea.Height()
+				m.textarea.SetValue("/")
+				m.textarea.MoveToEnd()
+				if cmd := m.handleTextareaHeightChange(prevHeight); cmd != nil {
 					cmds = append(cmds, cmd)
 				}
+				cmds = append(cmds, m.openCommandCompletions(0))
 			default:
 				if handleGlobalKeys(msg) {
 					// Handle global keys first before passing to textarea.
@@ -2208,12 +2420,13 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				if msg.String() == "@" && !m.completionsOpen {
 					// Only show if beginning of prompt or after whitespace.
 					if curIdx == 0 || (curIdx > 0 && isWhitespace(curValue[curIdx-1])) {
-						m.completionsOpen = true
-						m.completionsQuery = ""
-						m.completionsStartIndex = curIdx
-						m.completionsPositionStart = m.completionsPosition()
-						depth, limit := m.com.Config().Options.TUI.Completions.Limits()
-						cmds = append(cmds, m.completions.Open(depth, limit))
+						cmds = append(cmds, m.openFileCompletions(curIdx))
+					}
+				}
+				if msg.String() == "/" && !m.completionsOpen {
+					// Only show if beginning of prompt or after whitespace.
+					if curIdx == 0 || (curIdx > 0 && isWhitespace(curValue[curIdx-1])) {
+						cmds = append(cmds, m.openCommandCompletions(curIdx))
 					}
 				}
 
@@ -2252,8 +2465,9 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 				m.updateHistoryDraft(curValue)
 
 				// After updating textarea, check if we need to filter completions.
-				// Skip filtering on the initial @ keystroke since items are loading async.
-				if m.completionsOpen && msg.String() != "@" {
+				// Skip filtering on the initial trigger keystroke since items are
+				// loading async.
+				if m.completionsOpen && msg.String() != m.completionsTrigger {
 					newValue := m.textarea.Value()
 					newIdx := len(newValue)
 
@@ -2266,8 +2480,8 @@ func (m *UI) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 					} else {
 						// Extract current word and filter.
 						word := m.textareaWord()
-						if strings.HasPrefix(word, "@") {
-							m.completionsQuery = word[1:]
+						if strings.HasPrefix(word, m.completionsTrigger) {
+							m.completionsQuery = word[len(m.completionsTrigger):]
 							m.completions.Filter(m.completionsQuery)
 						} else if m.completionsOpen {
 							m.closeCompletions()
@@ -3183,9 +3397,60 @@ func (m *UI) bangPromptFunc(info textarea.PromptInfo) string {
 // closeCompletions closes the completions popup and resets state.
 func (m *UI) closeCompletions() {
 	m.completionsOpen = false
+	m.completionsTrigger = ""
 	m.completionsQuery = ""
 	m.completionsStartIndex = 0
 	m.completions.Close()
+}
+
+func (m *UI) openFileCompletions(startIndex int) tea.Cmd {
+	m.completionsOpen = true
+	m.completionsTrigger = "@"
+	m.completionsQuery = ""
+	m.completionsStartIndex = startIndex
+	m.completionsPositionStart = m.completionsPosition()
+	depth, limit := m.com.Config().Options.TUI.Completions.Limits()
+	return m.completions.Open(depth, limit)
+}
+
+func (m *UI) openCommandCompletions(startIndex int) tea.Cmd {
+	m.completionsOpen = true
+	m.completionsTrigger = "/"
+	m.completionsQuery = ""
+	m.completionsStartIndex = startIndex
+	m.completionsPositionStart = m.completionsPosition()
+	return func() tea.Msg {
+		commandsDialog, err := dialog.NewCommands(
+			m.com,
+			m.currentSessionID(),
+			m.hasSession(),
+			m.hasSession() && hasIncompleteTodos(m.session.Todos),
+			m.promptQueue > 0,
+			m.customCommands,
+			m.mcpPrompts,
+		)
+		if err != nil {
+			return util.ReportError(err)()
+		}
+		commandsDialog.SetWindowWidth(m.width)
+		items := commandsDialog.SlashCommands()
+		values := make([]completions.CommandCompletionValue, 0, len(items))
+		for _, item := range items {
+			values = append(values, completions.CommandCompletionValue{
+				Alias:  item.SlashAlias(),
+				Title:  item.Title(),
+				Action: item.Action(),
+			})
+		}
+		return completions.CommandItemsLoadedMsg{Commands: values}
+	}
+}
+
+func (m *UI) currentSessionID() string {
+	if m.hasSession() {
+		return m.session.ID
+	}
+	return ""
 }
 
 // insertCompletionText replaces the @query in the textarea with the given text.

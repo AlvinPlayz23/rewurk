@@ -113,8 +113,8 @@ func (a *AgentToolMessageItem) AddNestedTool(tool ToolMessageItem) {
 	if s, ok := tool.(Compactable); ok {
 		s.SetCompact(true)
 	}
-	if b, ok := tool.(*baseToolMessageItem); ok {
-		b.isNoIcon = true
+	if s, ok := tool.(IconHideable); ok {
+		s.SetNoIcon(true)
 	}
 	a.nestedTools = append(a.nestedTools, tool)
 	a.clearCache()

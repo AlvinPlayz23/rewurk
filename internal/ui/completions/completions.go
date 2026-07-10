@@ -44,6 +44,11 @@ type CompletionItemsLoadedMsg struct {
 	Resources []ResourceCompletionValue
 }
 
+// CommandItemsLoadedMsg is sent when slash command completions are loaded.
+type CommandItemsLoadedMsg struct {
+	Commands []CommandCompletionValue
+}
+
 // Completions represents the completions popup component.
 type Completions struct {
 	// Popup dimensions
@@ -177,6 +182,37 @@ func (c *Completions) SetItems(files []FileCompletionValue, resources []Resource
 		item := NewCompletionItem(
 			resource.MCPName+"/"+cmp.Or(resource.Title, resource.URI),
 			resource,
+			c.normalStyle,
+			c.focusedStyle,
+			c.matchStyle,
+		)
+		items = append(items, item)
+	}
+
+	c.open = true
+	c.query = ""
+	c.allItems = items
+	c.filtered = append([]list.FilterableItem(nil), items...)
+	c.list.SetItems(c.filtered...)
+	c.list.SetFilter("")
+	c.list.Focus()
+
+	c.width = maxWidth
+	c.height = ordered.Clamp(len(items), int(minHeight), int(maxHeight))
+	c.list.SetSize(c.width, c.height)
+	c.list.SelectFirst()
+	c.list.ScrollToSelected()
+
+	c.updateSize()
+}
+
+// SetCommandItems sets slash command completions.
+func (c *Completions) SetCommandItems(commands []CommandCompletionValue) {
+	items := make([]list.FilterableItem, 0, len(commands))
+	for _, command := range commands {
+		item := NewCompletionItem(
+			commandCompletionText(command),
+			command,
 			c.normalStyle,
 			c.focusedStyle,
 			c.matchStyle,
@@ -385,9 +421,18 @@ func (c *Completions) selectCurrent(keepOpen bool) tea.Msg {
 			Value:    item,
 			KeepOpen: keepOpen,
 		}
+	case CommandCompletionValue:
+		return SelectionMsg[CommandCompletionValue]{
+			Value:    item,
+			KeepOpen: keepOpen,
+		}
 	default:
 		return nil
 	}
+}
+
+func commandCompletionText(command CommandCompletionValue) string {
+	return command.Alias
 }
 
 // Render renders the completions popup.

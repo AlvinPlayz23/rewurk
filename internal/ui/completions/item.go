@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/crush/internal/ui/dialog"
 	"github.com/charmbracelet/crush/internal/ui/list"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rivo/uniseg"
@@ -21,6 +22,13 @@ type ResourceCompletionValue struct {
 	URI      string
 	Title    string
 	MIMEType string
+}
+
+// CommandCompletionValue represents a slash command completion value.
+type CommandCompletionValue struct {
+	Alias  string
+	Title  string
+	Action dialog.Action
 }
 
 // CompletionItem represents an item in the completions list.

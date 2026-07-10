@@ -239,6 +239,12 @@ func (c *Commands) InitialCmd() tea.Cmd {
 	return checkDockerMCPAvailabilityCmd()
 }
 
+// SetWindowWidth updates the window width used by width-conditional command
+// availability.
+func (c *Commands) SetWindowWidth(width int) {
+	c.windowWidth = width
+}
+
 // Cursor returns the cursor position relative to the dialog.
 func (c *Commands) Cursor() *tea.Cursor {
 	return InputCursor(c.com.Styles, c.input.Cursor())
@@ -429,14 +435,14 @@ func (c *Commands) setCommandItems(commandType CommandType) {
 // defaultCommands returns the list of default system commands.
 func (c *Commands) defaultCommands() []*CommandItem {
 	commands := []*CommandItem{
-		NewCommandItem(c.com.Styles, "new_session", "New Session", "ctrl+n", ActionNewSession{}),
-		NewCommandItem(c.com.Styles, "switch_session", "Sessions", "ctrl+s", ActionOpenDialog{SessionsID}),
-		NewCommandItem(c.com.Styles, "switch_model", "Switch Model", "ctrl+l", ActionOpenDialog{ModelsID}),
+		NewCommandItem(c.com.Styles, "new_session", "New Session", "ctrl+n", ActionNewSession{}).WithSlashAlias("/new"),
+		NewCommandItem(c.com.Styles, "switch_session", "Sessions", "ctrl+s", ActionOpenDialog{SessionsID}).WithSlashAlias("/sessions"),
+		NewCommandItem(c.com.Styles, "switch_model", "Switch Model", "ctrl+l", ActionOpenDialog{ModelsID}).WithSlashAlias("/switch"),
 	}
 
 	// Only show compact command if there's an active session
 	if c.hasSession {
-		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", "Summarize Session", "", ActionSummarize{SessionID: c.sessionID}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "summarize", "Summarize Session", "", ActionSummarize{SessionID: c.sessionID}).WithSlashAlias("/summarize"))
 	}
 
 	// Add reasoning toggle for models that support it
@@ -453,20 +459,20 @@ func (c *Commands) defaultCommands() []*CommandItem {
 				if selectedModel.Think {
 					status = "Disable"
 				}
-				commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking", status+" Thinking Mode", "", ActionToggleThinking{}))
+				commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking", status+" Thinking Mode", "", ActionToggleThinking{}).WithSlashAlias("/think"))
 			}
 
 			// OpenAI models: reasoning effort dialog
 			if len(model.ReasoningLevels) > 0 {
 				commands = append(commands, NewCommandItem(c.com.Styles, "select_reasoning_effort", "Select Reasoning Effort", "", ActionOpenDialog{
 					DialogID: ReasoningID,
-				}))
+				}).WithSlashAlias("/reasoning"))
 			}
 		}
 	}
 	// Only show toggle compact mode command if window width is larger than compact breakpoint (120)
 	if c.windowWidth >= sidebarCompactModeBreakpoint && c.hasSession {
-		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_sidebar", "Toggle Sidebar", "", ActionToggleCompactMode{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_sidebar", "Toggle Sidebar", "", ActionToggleCompactMode{}).WithSlashAlias("/sidebar"))
 	}
 	if c.hasSession {
 		cfgPrime := c.com.Config()
@@ -475,7 +481,7 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		if model != nil && model.SupportsImages {
 			commands = append(commands, NewCommandItem(c.com.Styles, "file_picker", "Open File Picker", "ctrl+f", ActionOpenDialog{
 				DialogID: FilePickerID,
-			}))
+			}).WithSlashAlias("/file"))
 		}
 	}
 
@@ -485,17 +491,17 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	// because os.Getenv does IO is breaks the TEA paradigm and is generally an
 	// antipattern.
 	if os.Getenv("EDITOR") != "" {
-		commands = append(commands, NewCommandItem(c.com.Styles, "open_external_editor", "Open External Editor", "ctrl+o", ActionExternalEditor{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "open_external_editor", "Open External Editor", "ctrl+o", ActionExternalEditor{}).WithSlashAlias("/editor"))
 	}
 
 	// Add Docker MCP command if available and not already enabled.
 	if !cfg.IsDockerMCPEnabled() && c.dockerMCPAvailable != nil && *c.dockerMCPAvailable {
-		commands = append(commands, NewCommandItem(c.com.Styles, "enable_docker_mcp", "Enable Docker MCP Catalog", "", ActionEnableDockerMCP{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "enable_docker_mcp", "Enable Docker MCP Catalog", "", ActionEnableDockerMCP{}).WithSlashAlias("/docker-mcp"))
 	}
 
 	// Add disable Docker MCP command if it's currently enabled
 	if cfg.IsDockerMCPEnabled() {
-		commands = append(commands, NewCommandItem(c.com.Styles, "disable_docker_mcp", "Disable Docker MCP Catalog", "", ActionDisableDockerMCP{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "disable_docker_mcp", "Disable Docker MCP Catalog", "", ActionDisableDockerMCP{}).WithSlashAlias("/docker-mcp"))
 	}
 
 	if c.hasTodos || c.hasQueue {
@@ -508,24 +514,24 @@ func (c *Commands) defaultCommands() []*CommandItem {
 		default:
 			label = "Toggle To-Dos"
 		}
-		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_pills", label, "ctrl+t", ActionTogglePills{}))
+		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_pills", label, "ctrl+t", ActionTogglePills{}).WithSlashAlias("/tasks"))
 	}
 	if c.hasSession {
-		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking_blocks", "Toggle Thinking Blocks", "", ActionToggleThinkingBlocks{}).
+		commands = append(commands, NewCommandItem(c.com.Styles, "toggle_thinking_blocks", "Toggle Thinking Blocks", "", ActionToggleThinkingBlocks{}).WithSlashAlias("/thoughts").
 			WithAliases("reasoning thoughts show hide collapse expand"))
 	}
 
 	// Add a command for selecting notification style via picker dialog.
 	notificationLabel := "Notification Style"
-	commands = append(commands, NewCommandItem(c.com.Styles, "select_notifications", notificationLabel, "", ActionOpenDialog{DialogID: NotificationsID}))
-	commands = append(commands, NewCommandItem(c.com.Styles, "switch_theme", "Switch Theme", "", ActionOpenDialog{DialogID: ThemesID}).
+	commands = append(commands, NewCommandItem(c.com.Styles, "select_notifications", notificationLabel, "", ActionOpenDialog{DialogID: NotificationsID}).WithSlashAlias("/notifications"))
+	commands = append(commands, NewCommandItem(c.com.Styles, "switch_theme", "Switch Theme", "", ActionOpenDialog{DialogID: ThemesID}).WithSlashAlias("/theme").
 		WithAliases("theme color colors appearance"))
 
 	commands = append(
 		commands,
-		NewCommandItem(c.com.Styles, "toggle_yolo", "Toggle Yolo Mode", "ctrl+y", ActionToggleYoloMode{}),
-		NewCommandItem(c.com.Styles, "toggle_help", "Toggle Help", "ctrl+g", ActionToggleHelp{}),
-		NewCommandItem(c.com.Styles, "init", "Initialize Project", "", ActionInitializeProject{}),
+		NewCommandItem(c.com.Styles, "toggle_yolo", "Toggle Yolo Mode", "ctrl+y", ActionToggleYoloMode{}).WithSlashAlias("/yolo"),
+		NewCommandItem(c.com.Styles, "toggle_help", "Toggle Help", "ctrl+g", ActionToggleHelp{}).WithSlashAlias("/help"),
+		NewCommandItem(c.com.Styles, "init", "Initialize Project", "", ActionInitializeProject{}).WithSlashAlias("/init"),
 	)
 
 	// Add transparent background toggle.
@@ -533,14 +539,27 @@ func (c *Commands) defaultCommands() []*CommandItem {
 	if cfg != nil && cfg.Options != nil && cfg.Options.TUI.Transparent != nil && *cfg.Options.TUI.Transparent {
 		transparentLabel = "Enable Background Color"
 	}
-	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_transparent", transparentLabel, "", ActionToggleTransparentBackground{}))
+	commands = append(commands, NewCommandItem(c.com.Styles, "toggle_transparent", transparentLabel, "", ActionToggleTransparentBackground{}).WithSlashAlias("/background"))
 
 	commands = append(
 		commands,
-		NewCommandItem(c.com.Styles, "quit", "Quit", "ctrl+c", tea.QuitMsg{}).WithAliases("exit"),
+		NewCommandItem(c.com.Styles, "quit", "Quit", "ctrl+c", tea.QuitMsg{}).WithSlashAlias("/quit").WithAliases("exit"),
 	)
 
 	return commands
+}
+
+// SlashCommands returns command items that have slash aliases for inline
+// command completions.
+func (c *Commands) SlashCommands() []*CommandItem {
+	commands := c.defaultCommands()
+	result := make([]*CommandItem, 0, len(commands))
+	for _, command := range commands {
+		if command.SlashAlias() != "" {
+			result = append(result, command)
+		}
+	}
+	return result
 }
 
 // SetCustomCommands sets the custom commands and refreshes the view if user commands are currently displayed.

@@ -59,6 +59,11 @@ type Compactable interface {
 	SetCompact(compact bool)
 }
 
+// IconHideable is an interface for tool items that can suppress their status icon.
+type IconHideable interface {
+	SetNoIcon(noIcon bool)
+}
+
 // SpinningState contains the state passed to SpinningFunc for custom spinning logic.
 type SpinningState struct {
 	ToolCall message.ToolCall
@@ -270,6 +275,16 @@ func (t *baseToolMessageItem) SetCompact(compact bool) {
 		return
 	}
 	t.isCompact = compact
+	t.clearCache()
+	t.Bump()
+}
+
+// SetNoIcon implements the IconHideable interface.
+func (t *baseToolMessageItem) SetNoIcon(noIcon bool) {
+	if t.isNoIcon == noIcon {
+		return
+	}
+	t.isNoIcon = noIcon
 	t.clearCache()
 	t.Bump()
 }

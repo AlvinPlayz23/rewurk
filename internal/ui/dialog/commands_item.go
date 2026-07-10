@@ -15,6 +15,7 @@ type CommandItem struct {
 	*list.Versioned
 	id          string
 	title       string
+	slashAlias  string
 	shortcut    string
 	description string
 	action      Action
@@ -51,6 +52,13 @@ func (c *CommandItem) WithAliases(aliases ...string) *CommandItem {
 	return c
 }
 
+// WithSlashAlias returns the CommandItem with the slash command alias used by
+// inline command completions.
+func (c *CommandItem) WithSlashAlias(alias string) *CommandItem {
+	c.slashAlias = alias
+	return c
+}
+
 // WithDescription returns the CommandItem with a description displayed below
 // the title.
 func (c *CommandItem) WithDescription(desc string) *CommandItem {
@@ -61,8 +69,11 @@ func (c *CommandItem) WithDescription(desc string) *CommandItem {
 // Filter implements ListItem.
 func (c *CommandItem) Filter() string {
 	base := c.title
+	if c.slashAlias != "" {
+		base = c.slashAlias + " " + base
+	}
 	if len(c.aliases) > 0 {
-		base = c.title + " " + strings.Join(c.aliases, " ")
+		base = base + " " + strings.Join(c.aliases, " ")
 	}
 	if c.description != "" {
 		base = base + " " + c.description
@@ -73,6 +84,16 @@ func (c *CommandItem) Filter() string {
 // ID implements ListItem.
 func (c *CommandItem) ID() string {
 	return c.id
+}
+
+// Title returns the visible command title used by the command dialog.
+func (c *CommandItem) Title() string {
+	return c.title
+}
+
+// SlashAlias returns the slash command alias used by inline completions.
+func (c *CommandItem) SlashAlias() string {
+	return c.slashAlias
 }
 
 // SetFocused implements ListItem.
