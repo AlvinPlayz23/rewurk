@@ -178,46 +178,6 @@ func (c *ProviderConfig) SetupGitHubCopilot() {
 	maps.Copy(c.ExtraHeaders, copilot.Headers())
 }
 
-type MCPType string
-
-const (
-	MCPStdio MCPType = "stdio"
-	MCPSSE   MCPType = "sse"
-	MCPHttp  MCPType = "http"
-)
-
-type MCPConfig struct {
-	Command       string            `json:"command,omitempty" jsonschema:"description=Command to execute for stdio MCP servers,example=npx"`
-	Env           map[string]string `json:"env,omitempty" jsonschema:"description=Environment variables to set for the MCP server"`
-	Args          []string          `json:"args,omitempty" jsonschema:"description=Arguments to pass to the MCP server command"`
-	Type          MCPType           `json:"type" jsonschema:"required,description=Type of MCP connection,enum=stdio,enum=sse,enum=http,default=stdio"`
-	URL           string            `json:"url,omitempty" jsonschema:"description=URL for HTTP or SSE MCP servers,format=uri,example=http://localhost:3000/mcp"`
-	Disabled      bool              `json:"disabled,omitempty" jsonschema:"description=Whether this MCP server is disabled,default=false"`
-	DisabledTools []string          `json:"disabled_tools,omitempty" jsonschema:"description=List of tools from this MCP server to disable,example=get-library-doc"`
-	EnabledTools  []string          `json:"enabled_tools,omitempty" jsonschema:"description=Allow list of tools from this MCP server,example=get-library-doc"`
-	Timeout       int               `json:"timeout,omitempty" jsonschema:"description=Timeout in seconds for MCP server connections,default=15,example=30,example=60,example=120"`
-
-	// Headers are HTTP headers for HTTP/SSE MCP servers. Values run
-	// through shell expansion at MCP startup, so $VAR and $(cmd)
-	// work. A header whose value resolves to the empty string (unset
-	// bare $VAR under lenient nounset, $(echo), or literal "") is
-	// omitted from the outgoing request rather than sent as
-	// "Header:".
-	Headers map[string]string `json:"headers,omitempty" jsonschema:"description=HTTP headers for HTTP/SSE MCP servers"`
-}
-
-type LSPConfig struct {
-	Disabled    bool              `json:"disabled,omitempty" jsonschema:"description=Whether this LSP server is disabled,default=false"`
-	Command     string            `json:"command,omitempty" jsonschema:"description=Command to execute for the LSP server,example=gopls"`
-	Args        []string          `json:"args,omitempty" jsonschema:"description=Arguments to pass to the LSP server command"`
-	Env         map[string]string `json:"env,omitempty" jsonschema:"description=Environment variables to set to the LSP server command"`
-	FileTypes   []string          `json:"filetypes,omitempty" jsonschema:"description=File types this LSP server handles,example=go,example=mod,example=rs,example=c,example=js,example=ts"`
-	RootMarkers []string          `json:"root_markers,omitempty" jsonschema:"description=Files or directories that indicate the project root,example=go.mod,example=package.json,example=Cargo.toml"`
-	InitOptions map[string]any    `json:"init_options,omitempty" jsonschema:"description=Initialization options passed to the LSP server during initialize request"`
-	Options     map[string]any    `json:"options,omitempty" jsonschema:"description=LSP server-specific settings passed during initialization"`
-	Timeout     int               `json:"timeout,omitempty" jsonschema:"description=Timeout in seconds for LSP server initialization,default=30,example=60,example=120"`
-}
-
 type TUIOptions struct {
 	CompactMode bool   `json:"compact_mode,omitempty" jsonschema:"description=Enable compact mode for the TUI interface,default=false"`
 	DiffMode    string `json:"diff_mode,omitempty" jsonschema:"description=Diff mode for the TUI interface,enum=unified,enum=split"`
@@ -278,7 +238,6 @@ type Options struct {
 	SkillsPaths          []string    `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/crush/skills,example=./skills"`
 	TUI                  *TUIOptions `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
 	Debug                bool        `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
-	DebugLSP             bool        `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
 	DisableAutoSummarize bool        `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`
 	// DataDirectory is where Crush keeps per-project state such as
 	// the SQLite database and workspace overrides. Relative paths are
@@ -291,221 +250,10 @@ type Options struct {
 	Attribution               *Attribution `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
 	DisableMetrics            bool         `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
 	InitializeAs              string       `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=CRUSH.md,example=CLAUDE.md,example=docs/LLMs.md"`
-	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
 	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
 	DisableNotifications      bool         `json:"disable_notifications,omitempty" jsonschema:"description=Deprecated: Use notification_style instead. Disable notifications,default=false"`
 	NotificationStyle         string       `json:"notification_style,omitempty" jsonschema:"description=Notification style to use. Options: auto (default), osc, bell, disabled. Auto selects based on environment and terminal capabilities.,enum=auto,enum=osc,enum=bell,enum=disabled,default=auto"`
 	DisabledSkills            []string     `json:"disabled_skills,omitempty" jsonschema:"description=List of skill names to disable and hide from the agent,example=crush-config"`
-}
-
-type MCPs map[string]MCPConfig
-
-type MCP struct {
-	Name string    `json:"name"`
-	MCP  MCPConfig `json:"mcp"`
-}
-
-func (m MCPs) Sorted() []MCP {
-	sorted := make([]MCP, 0, len(m))
-	for k, v := range m {
-		sorted = append(sorted, MCP{
-			Name: k,
-			MCP:  v,
-		})
-	}
-	slices.SortFunc(sorted, func(a, b MCP) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	return sorted
-}
-
-type LSPs map[string]LSPConfig
-
-type LSP struct {
-	Name string    `json:"name"`
-	LSP  LSPConfig `json:"lsp"`
-}
-
-func (l LSPs) Sorted() []LSP {
-	sorted := make([]LSP, 0, len(l))
-	for k, v := range l {
-		sorted = append(sorted, LSP{
-			Name: k,
-			LSP:  v,
-		})
-	}
-	slices.SortFunc(sorted, func(a, b LSP) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-	return sorted
-}
-
-// ResolvedEnv returns m.Env with every value expanded through the
-// given resolver. The returned slice is of the form "KEY=value" sorted
-// by key so callers get deterministic output; the receiver's Env map is
-// not mutated. On the first resolution failure it returns nil and an
-// error that identifies the offending key; the inner resolver error is
-// already sanitized by ResolveValue and is wrapped with %w so
-// errors.Is/As continues to work. Callers are expected to surface it
-// (for MCP, via StateError on the status card) rather than silently
-// spawn the server with an empty credential.
-//
-// The resolver choice matters: in server mode pass the shell resolver
-// so $VAR / $(cmd) expand; in client mode pass IdentityResolver so the
-// template is forwarded verbatim and expansion happens on the server.
-func (m MCPConfig) ResolvedEnv(r VariableResolver) ([]string, error) {
-	return resolveEnvs(m.Env, r)
-}
-
-// ResolvedArgs returns m.Args with every element expanded through the
-// given resolver. A fresh slice is allocated; m.Args is never mutated.
-// On the first resolution failure it returns nil and an error
-// identifying the offending positional index; the inner resolver error
-// is already sanitized by ResolveValue and is wrapped with %w so
-// errors.Is/As continues to work.
-//
-// See ResolvedEnv for guidance on picking a resolver.
-func (m MCPConfig) ResolvedArgs(r VariableResolver) ([]string, error) {
-	if len(m.Args) == 0 {
-		return nil, nil
-	}
-	out := make([]string, len(m.Args))
-	for i, a := range m.Args {
-		v, err := r.ResolveValue(a)
-		if err != nil {
-			return nil, fmt.Errorf("arg %d: %w", i, err)
-		}
-		out[i] = v
-	}
-	return out, nil
-}
-
-// ResolvedURL returns m.URL expanded through the given resolver. The
-// receiver is not mutated. Errors from the resolver are already
-// sanitized by ResolveValue and are wrapped with %w for errors.Is/As.
-//
-// URLs run through the same shell-expansion pipeline as the other
-// fields, so a literal '$' (e.g. OData query strings containing
-// $filter/$select) must be escaped as '\$' or '${DOLLAR:-$}' to avoid
-// being interpreted as a variable reference. Same constraint already
-// applies to command, args, env, and headers.
-//
-// See ResolvedEnv for guidance on picking a resolver.
-func (m MCPConfig) ResolvedURL(r VariableResolver) (string, error) {
-	if m.URL == "" {
-		return "", nil
-	}
-	v, err := r.ResolveValue(m.URL)
-	if err != nil {
-		return "", fmt.Errorf("url: %w", err)
-	}
-	return v, nil
-}
-
-// ResolvedHeaders returns m.Headers with every value expanded through
-// the given resolver. A fresh map is allocated; m.Headers is never
-// mutated. On the first resolution failure it returns nil and an error
-// identifying the offending header name; the inner resolver error is
-// already sanitized by ResolveValue and is wrapped with %w so
-// errors.Is/As continues to work.
-//
-// A header whose value resolves to the empty string (unset bare $VAR
-// under lenient nounset, $(echo), or literal "") is omitted from the
-// returned map — sending "X-Auth:" with an empty value is rejected by
-// some providers and the user's intent in "optional, env-gated
-// header" is clearly "absent when the var isn't set."
-//
-// See ResolvedEnv for guidance on picking a resolver.
-func (m MCPConfig) ResolvedHeaders(r VariableResolver) (map[string]string, error) {
-	if len(m.Headers) == 0 {
-		return map[string]string{}, nil
-	}
-	out := make(map[string]string, len(m.Headers))
-	// Sort keys so failures are reported deterministically when more
-	// than one header would fail.
-	keys := make([]string, 0, len(m.Headers))
-	for k := range m.Headers {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	for _, k := range keys {
-		v, err := r.ResolveValue(m.Headers[k])
-		if err != nil {
-			return nil, fmt.Errorf("header %s: %w", k, err)
-		}
-		if v == "" {
-			continue
-		}
-		out[k] = v
-	}
-	return out, nil
-}
-
-// ResolvedArgs returns l.Args with every element expanded through the
-// given resolver. A fresh slice is allocated; l.Args is never mutated.
-// On the first resolution failure it returns nil and an error
-// identifying the offending positional index; the inner resolver error
-// is already sanitized by ResolveValue and is wrapped with %w so
-// errors.Is/As continues to work.
-//
-// Empty resolved values are kept (a deliberate "empty positional arg"
-// like --flag "" is sometimes valid), matching MCPConfig.ResolvedArgs.
-//
-// The resolver choice matters: in server mode pass the shell resolver
-// so $VAR / $(cmd) expand; in client mode pass IdentityResolver so the
-// template is forwarded verbatim.
-func (l LSPConfig) ResolvedArgs(r VariableResolver) ([]string, error) {
-	if len(l.Args) == 0 {
-		return nil, nil
-	}
-	out := make([]string, len(l.Args))
-	for i, a := range l.Args {
-		v, err := r.ResolveValue(a)
-		if err != nil {
-			return nil, fmt.Errorf("arg %d: %w", i, err)
-		}
-		out[i] = v
-	}
-	return out, nil
-}
-
-// ResolvedEnv returns l.Env with every value expanded through the
-// given resolver. A fresh map is allocated; l.Env is never mutated.
-// On the first resolution failure it returns nil and an error that
-// identifies the offending key; the inner resolver error is already
-// sanitized by ResolveValue and is wrapped with %w so errors.Is/As
-// continues to work.
-//
-// Empty resolved values are kept ("FOO=" is a legitimate request;
-// opt out via ${VAR:+...}), matching MCPConfig.ResolvedEnv.
-//
-// Shape note: this returns map[string]string rather than the []string
-// shape MCPConfig.ResolvedEnv uses because the consumer
-// (powernap.ClientConfig.Environment in internal/lsp/client.go) takes
-// a map directly — returning a []string here would only force a
-// round-trip back to a map at the call site.
-//
-// See ResolvedArgs for guidance on picking a resolver.
-func (l LSPConfig) ResolvedEnv(r VariableResolver) (map[string]string, error) {
-	if len(l.Env) == 0 {
-		return map[string]string{}, nil
-	}
-	out := make(map[string]string, len(l.Env))
-	// Sort keys so failures are reported deterministically when more
-	// than one value would fail.
-	keys := make([]string, 0, len(l.Env))
-	for k := range l.Env {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	for _, k := range keys {
-		v, err := r.ResolveValue(l.Env[k])
-		if err != nil {
-			return nil, fmt.Errorf("env %q: %w", k, err)
-		}
-		out[k] = v
-	}
-	return out, nil
 }
 
 type Agent struct {
@@ -520,12 +268,6 @@ type Agent struct {
 	// The available tools for the agent
 	//  if this is nil, all tools are available
 	AllowedTools []string `json:"allowed_tools,omitempty"`
-
-	// this tells us which MCPs are available for this agent
-	//  if this is empty all mcps are available
-	//  the string array is the list of tools from the AllowedMCP the agent has available
-	//  if the string array is nil, all tools from the AllowedMCP are available
-	AllowedMCP map[string][]string `json:"allowed_mcp,omitempty"`
 
 	// Overrides the context paths for this agent
 	ContextPaths []string `json:"context_paths,omitempty"`
@@ -611,10 +353,6 @@ type Config struct {
 	// The providers that are configured
 	Providers *csync.Map[string, ProviderConfig] `json:"providers,omitempty" jsonschema:"description=AI provider configurations"`
 
-	MCP MCPs `json:"mcp,omitempty" jsonschema:"description=Model Context Protocol server configurations"`
-
-	LSP LSPs `json:"lsp,omitempty" jsonschema:"description=Language Server Protocol configurations"`
-
 	Options *Options `json:"options,omitempty" jsonschema:"description=General application options"`
 
 	Permissions *Permissions `json:"permissions,omitempty" jsonschema:"description=Permission settings for tool usage"`
@@ -633,7 +371,7 @@ type Config struct {
 // mutator must never write through the live pointer. Instead it clones,
 // mutates the clone, and atomically swaps it in. The clone gives fresh
 // copies of every field a typed mutator touches in place — Models,
-// RecentModels, MCP, and Options (with its nested TUI pointer). Providers
+// RecentModels, and Options (with its nested TUI pointer). Providers
 // is a *csync.Map (internally synchronized) and is shared by reference;
 // the remaining fields are immutable after load from the mutators'
 // standpoint and are likewise shared.
@@ -641,7 +379,6 @@ func (c *Config) cloneForWrite() *Config {
 	nc := *c
 	nc.Models = maps.Clone(c.Models)
 	nc.RecentModels = maps.Clone(c.RecentModels)
-	nc.MCP = maps.Clone(c.MCP)
 	if c.Options != nil {
 		opts := *c.Options
 		if c.Options.TUI != nil {
@@ -736,7 +473,6 @@ func allToolNames() []string {
 		"job_kill",
 		"edit",
 		"multiedit",
-		"lsp_references",
 		"fetch",
 		"agentic_fetch",
 		"glob",
@@ -744,8 +480,6 @@ func allToolNames() []string {
 		"todos",
 		"read",
 		"write",
-		"list_mcp_resources",
-		"read_mcp_resource",
 	}
 }
 
@@ -795,8 +529,6 @@ func (c *Config) SetupAgents() {
 			Model:        SelectedModelTypeLarge,
 			ContextPaths: c.Options.ContextPaths,
 			AllowedTools: resolveReadOnlyTools(allowedTools),
-			// NO MCPs or LSPs by default
-			AllowedMCP: map[string][]string{},
 		},
 	}
 	c.Agents = agents

@@ -17,7 +17,6 @@ import (
 	"github.com/charmbracelet/crush/internal/fsext"
 	"github.com/charmbracelet/crush/internal/history"
 
-	"github.com/charmbracelet/crush/internal/lsp"
 	"github.com/charmbracelet/crush/internal/permission"
 )
 
@@ -60,7 +59,6 @@ type editContext struct {
 }
 
 func NewEditTool(
-	lspManager *lsp.Manager,
 	permissions permission.Service,
 	files history.Service,
 	filetracker filetracker.Service,
@@ -93,16 +91,10 @@ func NewEditTool(
 				return response, err
 			}
 			if response.IsError {
-				// Return early if there was an error during content replacement
-				// This prevents unnecessary LSP diagnostics processing
 				return response, nil
 			}
 
-			notifyLSPs(ctx, lspManager, params.FilePath)
-
-			text := fmt.Sprintf("<result>\n%s\n</result>\n", response.Content)
-			text += getDiagnostics(params.FilePath, lspManager)
-			response.Content = text
+			response.Content = fmt.Sprintf("<result>\n%s\n</result>\n", response.Content)
 			return response, nil
 		},
 	)
