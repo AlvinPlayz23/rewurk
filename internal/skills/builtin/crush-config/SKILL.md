@@ -198,7 +198,7 @@ Hooks are user-defined shell commands that fire on agent events. Currently only 
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(edit|write|multiedit)$",
+        "matcher": "^(edit|multiedit)$",
         "command": ".crush/hooks/protect-files.sh"
       },
       {

@@ -4,6 +4,8 @@
 
 - Updated the `edit` tool so replacement edits against missing file paths create the file with `new_string` as the full content.
 - Reused the existing edit file-creation path so parent directory creation, permissions, history tracking, and file tracking remain consistent.
+- Removed the standalone `write` tool from the tool registry, agent harness, protocol aliases, permission decoding, UI renderers, and docs.
+- Deleted the `write` tool implementation, description, tests, and agent test fixture now that file creation is handled by `edit`.
 - Updated the edit tool description to document missing-file creation behavior.
 - Added tests for creating missing files and nested parent directories through `edit`.
 

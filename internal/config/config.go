@@ -476,7 +476,6 @@ func allToolNames() []string {
 		"todos",
 		"read",
 		"web_search",
-		"write",
 	}
 }
 

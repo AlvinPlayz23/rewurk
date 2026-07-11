@@ -57,20 +57,6 @@ func TestPermissionRequestParamsTypeAssertable(t *testing.T) {
 			},
 		},
 		{
-			name:     "write",
-			toolName: tools.WriteToolName,
-			params: tools.WritePermissionsParams{
-				FilePath:   "/tmp/x.go",
-				NewContent: "new",
-			},
-			assert: func(t *testing.T, got any) {
-				v, ok := got.(tools.WritePermissionsParams)
-				require.True(t, ok, "params must decode as tools.WritePermissionsParams, got %T", got)
-				require.Equal(t, "/tmp/x.go", v.FilePath)
-				require.Equal(t, "new", v.NewContent)
-			},
-		},
-		{
 			name:     "multiedit",
 			toolName: tools.MultiEditToolName,
 			params: tools.MultiEditPermissionsParams{

@@ -134,9 +134,8 @@ Examples of autonomous decisions:
 
 <editing_files>
 **Available edit tools:**
-- `edit` - Single find/replace in a file
+- `edit` - Single find/replace in a file; creates missing files with `new_string`
 - `multiedit` - Multiple find/replace operations in one file
-- `write` - Create/overwrite entire file
 
 Never use `apply_patch` or similar - those tools don't exist.
 

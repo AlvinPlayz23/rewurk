@@ -648,7 +648,6 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent, isSubA
 		tools.NewTodosTool(c.sessions),
 		tools.NewReadTool(c.permissions, c.filetracker, c.skillTracker, c.cfg.WorkingDir(), c.cfg.Config().Options.SkillsPaths...),
 		tools.NewWebSearchTool(c.permissions, c.cfg.WorkingDir(), nil),
-		tools.NewWriteTool(c.permissions, c.history, c.filetracker, c.cfg.WorkingDir()),
 	)
 
 	var filteredTools []fantasy.AgentTool

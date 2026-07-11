@@ -137,21 +137,3 @@ type ReadResponseMetadata struct {
 	FilePath string `json:"file_path"`
 	Content  string `json:"content"`
 }
-
-const WriteToolName = "write"
-
-// WriteParams represents the parameters for the write tool.
-type WriteParams struct {
-	FilePath string `json:"file_path"`
-	Content  string `json:"content"`
-}
-
-// WritePermissionsParams represents the permission parameters for the write tool.
-type WritePermissionsParams = tools.WritePermissionsParams
-
-// WriteResponseMetadata represents the metadata for a write tool response.
-type WriteResponseMetadata struct {
-	Diff      string `json:"diff"`
-	Additions int    `json:"additions"`
-	Removals  int    `json:"removals"`
-}

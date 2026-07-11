@@ -184,7 +184,7 @@ This hook fires before every tool call. Use it to block dangerous commands,
 enforce policies, rewrite tool input, inject context the model should see, log
 stuff, and so on.
 
-**Matched against**: the tool name (e.g. `bash`, `edit`, `write`,
+**Matched against**: the tool name (e.g. `bash`, `edit`, `multiedit`,
 `mcp_github_create_pull_request`).
 
 > [!NOTE]
@@ -486,7 +486,7 @@ Add a reminder to the model whenever it writes a Go file:
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "^(edit|write|multiedit)$",
+        "matcher": "^(edit|multiedit)$",
         "command": "./hooks/go-context.sh"
       }
     ]

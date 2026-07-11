@@ -168,7 +168,6 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 		tools.NewGrepTool(env.workingDir, cfg.Config().Tools.Grep),
 		tools.NewReadTool(env.permissions, *env.filetracker, nil, env.workingDir),
 		tools.NewWebSearchTool(env.permissions, env.workingDir, r.GetDefaultClient()),
-		tools.NewWriteTool(env.permissions, env.history, *env.filetracker, env.workingDir),
 	}
 
 	return testSessionAgent(env, large, small, systemPrompt, allTools...), nil

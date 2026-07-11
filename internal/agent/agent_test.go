@@ -136,8 +136,8 @@ func TestCoderAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				foundRead := false
-				foundWrite := false
-				var readTCID, writeTCID string
+				foundEdit := false
+				var readTCID, editTCID string
 
 				for _, msg := range msgs {
 					if msg.Role == message.Assistant {
@@ -145,8 +145,8 @@ func TestCoderAgent(t *testing.T) {
 							if tc.Name == tools.ReadToolName {
 								readTCID = tc.ID
 							}
-							if tc.Name == tools.EditToolName || tc.Name == tools.WriteToolName {
-								writeTCID = tc.ID
+							if tc.Name == tools.EditToolName {
+								editTCID = tc.ID
 							}
 						}
 					}
@@ -155,15 +155,15 @@ func TestCoderAgent(t *testing.T) {
 							if tr.ToolCallID == readTCID {
 								foundRead = true
 							}
-							if tr.ToolCallID == writeTCID {
-								foundWrite = true
+							if tr.ToolCallID == editTCID {
+								foundEdit = true
 							}
 						}
 					}
 				}
 
 				require.True(t, foundRead, "Expected to find a read operation")
-				require.True(t, foundWrite, "Expected to find a write operation")
+				require.True(t, foundEdit, "Expected to find an edit operation")
 
 				mainGoPath := filepath.Join(env.workingDir, "main.go")
 				content, err := os.ReadFile(mainGoPath)
@@ -338,14 +338,14 @@ func TestCoderAgent(t *testing.T) {
 				require.NoError(t, err)
 				require.Contains(t, string(content), "Hello, Crush!", "Expected file to contain 'Hello, Crush!'")
 			})
-			t.Run("write tool", func(t *testing.T) {
+			t.Run("edit tool creates file", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
 
 				session, err := env.sessions.Create(t.Context(), "New Session")
 				require.NoError(t, err)
 
 				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "use write to create a new file called config.json with content '{\"name\": \"test\", \"version\": \"1.0.0\"}'",
+					Prompt:          "use edit to create a new file called config.json with content '{\"name\": \"test\", \"version\": \"1.0.0\"}'",
 					SessionID:       session.ID,
 					MaxOutputTokens: 10000,
 				})
@@ -355,27 +355,27 @@ func TestCoderAgent(t *testing.T) {
 				msgs, err := env.messages.List(t.Context(), session.ID)
 				require.NoError(t, err)
 
-				foundWrite := false
-				var writeTCID string
+				foundEdit := false
+				var editTCID string
 
 				for _, msg := range msgs {
 					if msg.Role == message.Assistant {
 						for _, tc := range msg.ToolCalls() {
-							if tc.Name == tools.WriteToolName {
-								writeTCID = tc.ID
+							if tc.Name == tools.EditToolName {
+								editTCID = tc.ID
 							}
 						}
 					}
 					if msg.Role == message.Tool {
 						for _, tr := range msg.ToolResults() {
-							if tr.ToolCallID == writeTCID {
-								foundWrite = true
+							if tr.ToolCallID == editTCID {
+								foundEdit = true
 							}
 						}
 					}
 				}
 
-				require.True(t, foundWrite, "Expected to find a write operation")
+				require.True(t, foundEdit, "Expected to find an edit operation")
 
 				configPath := filepath.Join(env.workingDir, "config.json")
 				content, err := os.ReadFile(configPath)

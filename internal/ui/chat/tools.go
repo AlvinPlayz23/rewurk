@@ -257,8 +257,6 @@ func NewToolMessageItem(
 		item = NewJobKillToolMessageItem(sty, toolCall, result, canceled)
 	case tools.ReadToolName:
 		item = NewReadToolMessageItem(sty, toolCall, result, canceled)
-	case tools.WriteToolName:
-		item = NewWriteToolMessageItem(sty, toolCall, result, canceled)
 	case tools.EditToolName:
 		item = NewEditToolMessageItem(sty, toolCall, result, canceled)
 	case tools.MultiEditToolName:
@@ -1201,11 +1199,6 @@ func (t *baseToolMessageItem) formatParametersForCopy() string {
 			parts = append(parts, fmt.Sprintf("**Edits:** %d", len(params.Edits)))
 			return strings.Join(parts, "\n")
 		}
-	case tools.WriteToolName:
-		var params tools.WriteParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			return fmt.Sprintf("**File:** %s", fsext.PrettyPath(params.FilePath))
-		}
 	case legacyFetchToolName:
 		var params legacyFetchParams
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
@@ -1307,8 +1300,6 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 		return t.formatEditResultForCopy()
 	case tools.MultiEditToolName:
 		return t.formatMultiEditResultForCopy()
-	case tools.WriteToolName:
-		return t.formatWriteResultForCopy()
 	case legacyFetchToolName:
 		return t.formatFetchResultForCopy()
 	case legacyAgenticFetchToolName:
@@ -1480,67 +1471,6 @@ func (t *baseToolMessageItem) formatMultiEditResultForCopy() string {
 	return result.String()
 }
 
-// formatWriteResultForCopy formats write tool results for clipboard.
-func (t *baseToolMessageItem) formatWriteResultForCopy() string {
-	if t.result == nil {
-		return ""
-	}
-
-	var params tools.WriteParams
-	if json.Unmarshal([]byte(t.toolCall.Input), &params) != nil {
-		return t.result.Content
-	}
-
-	lang := ""
-	if params.FilePath != "" {
-		ext := strings.ToLower(filepath.Ext(params.FilePath))
-		switch ext {
-		case ".go":
-			lang = "go"
-		case ".js", ".mjs":
-			lang = "javascript"
-		case ".ts":
-			lang = "typescript"
-		case ".py":
-			lang = "python"
-		case ".rs":
-			lang = "rust"
-		case ".java":
-			lang = "java"
-		case ".c":
-			lang = "c"
-		case ".cpp", ".cc", ".cxx":
-			lang = "cpp"
-		case ".sh", ".bash":
-			lang = "bash"
-		case ".json":
-			lang = "json"
-		case ".yaml", ".yml":
-			lang = "yaml"
-		case ".xml":
-			lang = "xml"
-		case ".html":
-			lang = "html"
-		case ".css":
-			lang = "css"
-		case ".md":
-			lang = "markdown"
-		}
-	}
-
-	var result strings.Builder
-	fmt.Fprintf(&result, "File: %s\n", fsext.PrettyPath(params.FilePath))
-	if lang != "" {
-		fmt.Fprintf(&result, "```%s\n", lang)
-	} else {
-		result.WriteString("```\n")
-	}
-	result.WriteString(params.Content)
-	result.WriteString("\n```")
-
-	return result.String()
-}
-
 // formatFetchResultForCopy formats fetch tool results for clipboard.
 func (t *baseToolMessageItem) formatFetchResultForCopy() string {
 	if t.result == nil {
@@ -1661,8 +1591,6 @@ func prettifyToolName(name string) string {
 		return "To-Do"
 	case tools.ReadToolName:
 		return "Read"
-	case tools.WriteToolName:
-		return "Write"
 	default:
 		return humanizedToolName(name)
 	}
