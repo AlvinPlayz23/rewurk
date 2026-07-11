@@ -1,5 +1,16 @@
 # Changelog
 
+## Edit Tool Creates Missing Files
+
+- Updated the `edit` tool so replacement edits against missing file paths create the file with `new_string` as the full content.
+- Reused the existing edit file-creation path so parent directory creation, permissions, history tracking, and file tracking remain consistent.
+- Updated the edit tool description to document missing-file creation behavior.
+- Added tests for creating missing files and nested parent directories through `edit`.
+
+Validation:
+
+- Ran `go test ./internal/agent/tools` successfully.
+
 ## Simplified Built-In Tool Set
 
 - Removed the `fetch`, `job_kill`, and `job_output` tools.

@@ -333,7 +333,7 @@ func replaceContent(edit editContext, filePath, oldString, newString string, rep
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fantasy.NewTextErrorResponse(fmt.Sprintf("file not found: %s", filePath)), nil
+			return createNewFile(edit, filePath, newString, call)
 		}
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to access file: %w", err)
 	}
