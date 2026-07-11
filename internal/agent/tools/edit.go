@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,7 +22,14 @@ import (
 )
 
 type EditParams struct {
-	FilePath   string `json:"file_path" description:"The absolute path to the file to modify"`
+	FilePath   string          `json:"file_path" description:"The absolute path to the file to modify"`
+	OldString  string          `json:"old_string" description:"The text to replace"`
+	NewString  string          `json:"new_string" description:"The text to replace it with"`
+	ReplaceAll bool            `json:"replace_all,omitempty" description:"Replace all occurrences of old_string (default false)"`
+	Edits      []EditOperation `json:"edits,omitempty" description:"Array of edit operations to perform atomically against the original file"`
+}
+
+type EditOperation struct {
 	OldString  string `json:"old_string" description:"The text to replace"`
 	NewString  string `json:"new_string" description:"The text to replace it with"`
 	ReplaceAll bool   `json:"replace_all,omitempty" description:"Replace all occurrences of old_string (default false)"`
@@ -58,6 +66,12 @@ type editContext struct {
 	workingDir  string
 }
 
+type editReplacement struct {
+	start     int
+	end       int
+	newString string
+}
+
 func NewEditTool(
 	permissions permission.Service,
 	files history.Service,
@@ -71,6 +85,9 @@ func NewEditTool(
 			if params.FilePath == "" {
 				return fantasy.NewTextErrorResponse("file_path is required"), nil
 			}
+			if len(params.Edits) > 0 && (params.OldString != "" || params.NewString != "" || params.ReplaceAll) {
+				return fantasy.NewTextErrorResponse("use either edits or old_string/new_string, not both"), nil
+			}
 
 			params.FilePath = filepathext.SmartJoin(workingDir, params.FilePath)
 
@@ -79,7 +96,9 @@ func NewEditTool(
 
 			editCtx := editContext{ctx, permissions, files, filetracker, workingDir}
 
-			if params.OldString == "" {
+			if len(params.Edits) > 0 {
+				response, err = editContent(editCtx, params.FilePath, params.Edits, call)
+			} else if params.OldString == "" {
 				response, err = createNewFile(editCtx, params.FilePath, params.NewString, call)
 			} else if params.NewString == "" {
 				response, err = deleteContent(editCtx, params.FilePath, params.OldString, params.ReplaceAll, call)
@@ -98,6 +117,200 @@ func NewEditTool(
 			return response, nil
 		},
 	)
+}
+
+func editContent(edit editContext, filePath string, edits []EditOperation, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	if len(edits) == 0 {
+		return fantasy.NewTextErrorResponse("at least one edit operation is required"), nil
+	}
+
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fantasy.NewTextErrorResponse(fmt.Sprintf("file not found: %s", filePath)), nil
+		}
+		return fantasy.ToolResponse{}, fmt.Errorf("failed to access file: %w", err)
+	}
+
+	if fileInfo.IsDir() {
+		return fantasy.NewTextErrorResponse(fmt.Sprintf("path is a directory, not a file: %s", filePath)), nil
+	}
+
+	sessionID := GetSessionFromContext(edit.ctx)
+	if sessionID == "" {
+		return fantasy.ToolResponse{}, fmt.Errorf("session ID is required for edit a file")
+	}
+
+	lastRead := edit.filetracker.LastReadTime(edit.ctx, sessionID, filePath)
+	if lastRead.IsZero() {
+		return fantasy.NewTextErrorResponse("you must read the file before editing it. Use the Read tool first"), nil
+	}
+
+	modTime := fileInfo.ModTime().Truncate(time.Second)
+	if modTime.After(lastRead) {
+		return fantasy.NewTextErrorResponse(
+			fmt.Sprintf(
+				"file %s has been modified since it was last read (mod time: %s, last read: %s)",
+				filePath, modTime.Format(time.RFC3339), lastRead.Format(time.RFC3339),
+			),
+		), nil
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fantasy.ToolResponse{}, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	oldContent, isCrlf := fsext.ToUnixLineEndings(string(content))
+	newContent, err := applyEditOperations(oldContent, edits)
+	if err != nil {
+		return fantasy.NewTextErrorResponse(err.Error()), nil
+	}
+
+	if oldContent == newContent {
+		return fantasy.NewTextErrorResponse("new content is the same as old content. No changes made."), nil
+	}
+
+	_, additions, removals := diff.GenerateDiff(
+		oldContent,
+		newContent,
+		strings.TrimPrefix(filePath, edit.workingDir),
+	)
+
+	p, err := edit.permissions.Request(
+		edit.ctx,
+		permission.CreatePermissionRequest{
+			SessionID:   sessionID,
+			Path:        fsext.PathOrPrefix(filePath, edit.workingDir),
+			ToolCallID:  call.ID,
+			ToolName:    EditToolName,
+			Action:      "write",
+			Description: fmt.Sprintf("Apply %d edits to file %s", len(edits), filePath),
+			Params: EditPermissionsParams{
+				FilePath:   filePath,
+				OldContent: oldContent,
+				NewContent: newContent,
+			},
+		},
+	)
+	if err != nil {
+		return fantasy.ToolResponse{}, err
+	}
+	if !p {
+		resp := NewPermissionDeniedResponse()
+		resp = fantasy.WithResponseMetadata(resp, EditResponseMetadata{
+			OldContent: oldContent,
+			NewContent: newContent,
+			Additions:  additions,
+			Removals:   removals,
+		})
+		return resp, nil
+	}
+
+	contentToWrite := newContent
+	if isCrlf {
+		contentToWrite, _ = fsext.ToWindowsLineEndings(contentToWrite)
+	}
+
+	err = os.WriteFile(filePath, []byte(contentToWrite), 0o644)
+	if err != nil {
+		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
+	}
+
+	file, err := edit.files.GetByPathAndSession(edit.ctx, filePath, sessionID)
+	if err != nil {
+		_, err = edit.files.Create(edit.ctx, sessionID, filePath, oldContent)
+		if err != nil {
+			return fantasy.ToolResponse{}, fmt.Errorf("error creating file history: %w", err)
+		}
+	}
+	if file.Content != oldContent {
+		_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, oldContent)
+		if err != nil {
+			slog.Debug("Error creating file history version", "error", err)
+		}
+	}
+	_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, newContent)
+	if err != nil {
+		slog.Error("Error creating file history version", "error", err)
+	}
+
+	edit.filetracker.RecordRead(edit.ctx, sessionID, filePath)
+
+	return fantasy.WithResponseMetadata(
+		fantasy.NewTextResponse(fmt.Sprintf("Applied %d edits to file: %s", len(edits), filePath)),
+		EditResponseMetadata{
+			OldContent: oldContent,
+			NewContent: newContent,
+			Additions:  additions,
+			Removals:   removals,
+		},
+	), nil
+}
+
+func applyEditOperations(content string, edits []EditOperation) (string, error) {
+	replacements := make([]editReplacement, 0, len(edits))
+	for i, edit := range edits {
+		if edit.OldString == "" {
+			return "", fmt.Errorf("edit %d: old_string cannot be empty", i+1)
+		}
+
+		if edit.ReplaceAll {
+			start := 0
+			matched := false
+			for {
+				index := strings.Index(content[start:], edit.OldString)
+				if index == -1 {
+					break
+				}
+				matched = true
+				index += start
+				replacements = append(replacements, editReplacement{
+					start:     index,
+					end:       index + len(edit.OldString),
+					newString: edit.NewString,
+				})
+				start = index + len(edit.OldString)
+			}
+			if !matched {
+				return "", fmt.Errorf("edit %d: old_string not found in file. Make sure it matches exactly, including whitespace and line breaks", i+1)
+			}
+			continue
+		}
+
+		index := strings.Index(content, edit.OldString)
+		if index == -1 {
+			return "", fmt.Errorf("edit %d: old_string not found in file. Make sure it matches exactly, including whitespace and line breaks", i+1)
+		}
+
+		lastIndex := strings.LastIndex(content, edit.OldString)
+		if index != lastIndex {
+			return "", fmt.Errorf("edit %d: old_string appears multiple times in the file. Please provide more context to ensure a unique match, or set replace_all to true", i+1)
+		}
+
+		replacements = append(replacements, editReplacement{
+			start:     index,
+			end:       index + len(edit.OldString),
+			newString: edit.NewString,
+		})
+	}
+
+	slices.SortFunc(replacements, func(a, b editReplacement) int {
+		return a.start - b.start
+	})
+	for i := 1; i < len(replacements); i++ {
+		if replacements[i-1].end > replacements[i].start {
+			return "", fmt.Errorf("edit operations overlap in the file. Merge them into one edit or target disjoint regions")
+		}
+	}
+
+	newContent := content
+	for i := len(replacements) - 1; i >= 0; i-- {
+		replacement := replacements[i]
+		newContent = newContent[:replacement.start] + replacement.newString + newContent[replacement.end:]
+	}
+
+	return newContent, nil
 }
 
 func createNewFile(edit editContext, filePath, content string, call fantasy.ToolCall) (fantasy.ToolResponse, error) {

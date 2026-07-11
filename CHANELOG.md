@@ -1,5 +1,21 @@
 # Changelog
 
+## Merged Multi-Edit Into Edit
+
+- Added `edits[]` support to the `edit` tool for multiple exact find-and-replace operations in one call.
+- Made `edits[]` application atomic: all edits match against the original file, overlapping edits fail, and failed edits do not partially write files.
+- Kept legacy top-level `old_string` and `new_string` behavior for single edits, file creation, and content deletion.
+- Removed `multiedit` from the default tool registry and agent tool allow-list so new sessions use `edit` for multi-edit operations.
+- Kept legacy `multiedit` protocol/UI compatibility so existing saved sessions remain readable.
+- Added tests for atomic multi-edit behavior, original-content matching, overlap rejection, failed-edit rollback, and CRLF preservation.
+
+Validation:
+
+- Ran `go test ./internal/agent/tools ./internal/proto` successfully.
+- Ran focused config tool-list tests successfully.
+- Ran `go test ./internal/agent -run "^$"` successfully as a compile check.
+- Full `go test ./internal/config` hit a Windows temp-file rename access error in `TestConfigStore_SetConfigFields_concurrentInProcess`.
+
 ## Edit Tool Creates Missing Files
 
 - Updated the `edit` tool so replacement edits against missing file paths create the file with `new_string` as the full content.

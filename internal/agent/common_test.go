@@ -163,7 +163,6 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 	allTools := []fantasy.AgentTool{
 		tools.NewBashTool(env.permissions, env.workingDir, cfg.Config().Options.Attribution, modelName),
 		tools.NewEditTool(env.permissions, env.history, *env.filetracker, env.workingDir),
-		tools.NewMultiEditTool(env.permissions, env.history, *env.filetracker, env.workingDir),
 		tools.NewGlobTool(env.workingDir, cfg.Config().Tools.Glob),
 		tools.NewGrepTool(env.workingDir, cfg.Config().Tools.Grep),
 		tools.NewReadTool(env.permissions, *env.filetracker, nil, env.workingDir),

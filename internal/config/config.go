@@ -470,7 +470,6 @@ func allToolNames() []string {
 		"agent",
 		"bash",
 		"edit",
-		"multiedit",
 		"glob",
 		"grep",
 		"todos",

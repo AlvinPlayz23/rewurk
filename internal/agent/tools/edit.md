@@ -1,1 +1,1 @@
-Edit a file by exact find-and-replace; can also create missing files, create content, or delete content. When the file path does not exist, the file is created with new_string as its full content. For renames/moves use bash. For multiple changes to one file use multiedit.
+Edit a file by exact find-and-replace. For multiple changes to one file, use edits[]; every edit is matched against the original file and the whole operation is atomic. The legacy top-level old_string/new_string form can also create missing files or delete content. For renames/moves use bash.

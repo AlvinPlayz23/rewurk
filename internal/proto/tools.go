@@ -46,10 +46,11 @@ const EditToolName = "edit"
 
 // EditParams represents the parameters for the edit tool.
 type EditParams struct {
-	FilePath   string `json:"file_path"`
-	OldString  string `json:"old_string"`
-	NewString  string `json:"new_string"`
-	ReplaceAll bool   `json:"replace_all,omitempty"`
+	FilePath   string                `json:"file_path"`
+	OldString  string                `json:"old_string"`
+	NewString  string                `json:"new_string"`
+	ReplaceAll bool                  `json:"replace_all,omitempty"`
+	Edits      []tools.EditOperation `json:"edits,omitempty"`
 }
 
 // EditPermissionsParams represents the permission parameters for the edit tool.
