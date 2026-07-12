@@ -1,0 +1,61 @@
+internal/ui/model/layout_test.go
+  s_cf7650f4f1090c::t_ae61a20a79a577 126,129,136,139,146,151,154
+  s_cf7650f4f1090c::t_1e22c10dceef0f 133
+CHANELOG.md
+  s_8c5f4628d8059b::t_85d19a74e5cb85 5-6
+  s_cf7650f4f1090c::t_790a37d395e129 3-4,7-16
+internal/agent/agent_test.go
+  s_cf7650f4f1090c::t_ae61a20a79a577 465-467
+  s_cf7650f4f1090c::t_1e22c10dceef0f 496-498,505-507,510
+internal/session/session_test.go
+  s_cf7650f4f1090c::t_ae61a20a79a577 36
+internal/config/load_test.go
+  s_cf7650f4f1090c::t_e8d3da9d0f01af 710,731
+internal/ui/model/ui.go
+  s_cf7650f4f1090c::t_e8d3da9d0f01af 2435-2437
+  s_804958557148fb::t_5e45cfe233b798 634-636,3946
+internal/ui/chat/tools.go
+  s_804958557148fb::t_e7e48239d3eda3 1256
+internal/ui/styles/styles.go
+  s_edfdddb2723335::t_c846214020f495 521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "1907085eb924d062134571827be2d7c28ff11d16",
+  "prompts": {},
+  "sessions": {
+    "s_804958557148fb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4e1f43c2-87c8-46c7-9848-cbe0bca36147",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_8c5f4628d8059b": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033oLcyigTSqi213kSpdZ2",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_cf7650f4f1090c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0aab73bc9ffe4xLSp8XSZ4JAAw",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_edfdddb2723335": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8f561773-72c7-4bc6-b1c1-5dcf0a67cbde",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    }
+  }
+}
