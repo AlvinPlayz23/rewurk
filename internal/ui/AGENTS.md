@@ -133,7 +133,7 @@ tool names to specific types:
 | File                  | Tools rendered                                 |
 | --------------------- | ---------------------------------------------- |
 | `chat/bash.go`        | Bash, JobOutput, JobKill                       |
-| `chat/file.go`        | View, Write, Edit, MultiEdit                   |
+| `chat/file.go`        | View, Write, Edit                              |
 | `chat/search.go`      | Glob, Grep                                     |
 | `chat/fetch.go`       | Fetch, WebFetch, WebSearch                     |
 | `chat/agent.go`       | Agent, AgenticFetch                            |

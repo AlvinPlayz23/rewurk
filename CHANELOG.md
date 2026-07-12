@@ -1,12 +1,13 @@
 # Changelog
 
-## Merged Multi-Edit Into Edit
+## Merged Batched Edits Into Edit
 
 - Added `edits[]` support to the `edit` tool for multiple exact find-and-replace operations in one call.
 - Made `edits[]` application atomic: all edits match against the original file, overlapping edits fail, and failed edits do not partially write files.
 - Kept legacy top-level `old_string` and `new_string` behavior for single edits, file creation, and content deletion.
-- Removed `multiedit` from the default tool registry and agent tool allow-list so new sessions use `edit` for multi-edit operations.
-- Kept legacy `multiedit` protocol/UI compatibility so existing saved sessions remain readable.
+- Removed the legacy standalone batched-edit tool from the default tool registry and agent tool allow-list so new sessions use `edit` for batched edit operations.
+- Updated the coder system prompt and builtin skill examples to point agents and hook matchers at `edit`.
+- Removed legacy standalone batched-edit protocol/UI compatibility.
 - Added tests for atomic multi-edit behavior, original-content matching, overlap rejection, failed-edit rollback, and CRLF preservation.
 
 Validation:

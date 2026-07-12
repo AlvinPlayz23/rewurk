@@ -160,7 +160,7 @@ else
 fi
 ```
 
-Config: `{"matcher": "^(edit|multiedit)$", "command": "./hooks/go-context.sh"}`
+Config: `{"matcher": "^edit$", "command": "./hooks/go-context.sh"}`
 
 ### Rewrite tool input (shallow merge)
 

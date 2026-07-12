@@ -9,8 +9,73 @@ import (
 	"time"
 
 	"charm.land/fantasy"
+	"github.com/charmbracelet/crush/internal/history"
+	"github.com/charmbracelet/crush/internal/permission"
+	"github.com/charmbracelet/crush/internal/pubsub"
 	"github.com/stretchr/testify/require"
 )
+
+type mockPermissionService struct{}
+
+func (m mockPermissionService) Subscribe(ctx context.Context) <-chan pubsub.Event[permission.PermissionRequest] {
+	return make(chan pubsub.Event[permission.PermissionRequest])
+}
+
+func (m mockPermissionService) GrantPersistent(permission.PermissionRequest) bool { return true }
+
+func (m mockPermissionService) Grant(permission.PermissionRequest) bool { return true }
+
+func (m mockPermissionService) Deny(permission.PermissionRequest) bool { return true }
+
+func (m mockPermissionService) Request(ctx context.Context, opts permission.CreatePermissionRequest) (bool, error) {
+	return true, nil
+}
+
+func (m mockPermissionService) AutoApproveSession(sessionID string) {}
+
+func (m mockPermissionService) SetSkipRequests(skip bool) {}
+
+func (m mockPermissionService) SkipRequests() bool { return false }
+
+func (m mockPermissionService) SubscribeNotifications(ctx context.Context) <-chan pubsub.Event[permission.PermissionNotification] {
+	return make(chan pubsub.Event[permission.PermissionNotification])
+}
+
+type mockHistoryService struct{}
+
+func (m mockHistoryService) Subscribe(ctx context.Context) <-chan pubsub.Event[history.File] {
+	return make(chan pubsub.Event[history.File])
+}
+
+func (m mockHistoryService) Create(ctx context.Context, sessionID, path, content string) (history.File, error) {
+	return history.File{SessionID: sessionID, Path: path, Content: content}, nil
+}
+
+func (m mockHistoryService) CreateVersion(ctx context.Context, sessionID, path, content string) (history.File, error) {
+	return history.File{SessionID: sessionID, Path: path, Content: content}, nil
+}
+
+func (m mockHistoryService) Get(ctx context.Context, id string) (history.File, error) {
+	return history.File{}, nil
+}
+
+func (m mockHistoryService) GetByPathAndSession(ctx context.Context, path, sessionID string) (history.File, error) {
+	return history.File{}, nil
+}
+
+func (m mockHistoryService) ListBySession(ctx context.Context, sessionID string) ([]history.File, error) {
+	return nil, nil
+}
+
+func (m mockHistoryService) ListLatestSessionFiles(ctx context.Context, sessionID string) ([]history.File, error) {
+	return nil, nil
+}
+
+func (m mockHistoryService) Delete(ctx context.Context, id string) error { return nil }
+
+func (m mockHistoryService) DeleteSessionFiles(ctx context.Context, sessionID string) error {
+	return nil
+}
 
 type mockFileTrackerService struct{}
 
