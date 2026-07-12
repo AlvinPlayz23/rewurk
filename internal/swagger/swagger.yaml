@@ -355,10 +355,6 @@ definitions:
         type: string
       title:
         type: string
-      todos:
-        items:
-          $ref: '#/definitions/proto.Todo'
-        type: array
       updated_at:
         type: integer
     type: object
@@ -576,10 +572,6 @@ definitions:
         type: string
       title:
         type: string
-      todos:
-        items:
-          $ref: '#/definitions/proto.Todo'
-        type: array
       updated_at:
         type: integer
     type: object
@@ -643,15 +635,6 @@ definitions:
         type: string
       state:
         $ref: '#/definitions/proto.SkillDiscoveryState'
-    type: object
-  proto.Todo:
-    properties:
-      active_form:
-        type: string
-      content:
-        type: string
-      status:
-        type: string
     type: object
   proto.VersionInfo:
     properties:

@@ -33,11 +33,7 @@ func TestEstimatedUsageStateSurvivesFetchModifySave(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, fetched.EstimatedUsage)
 
-	fetched.Todos = []Todo{{
-		Content:    "Check estimate state",
-		Status:     TodoStatusInProgress,
-		ActiveForm: "Checking estimate state",
-	}}
+	fetched.Title = "updated title"
 
 	updated, err := sessions.Save(t.Context(), fetched)
 	require.NoError(t, err)

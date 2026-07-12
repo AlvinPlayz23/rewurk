@@ -678,15 +678,6 @@ func quickStyle(o quickStyleOpts) Styles {
 	// Agentic fetch styles
 	s.Tool.AgenticFetchPromptTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.success).Foreground(o.separator)
 
-	// Todo styles
-	s.Tool.TodoRatio = base.Foreground(o.infoMostSubtle)
-	s.Tool.TodoCompletedIcon = base.Foreground(o.success)
-	s.Tool.TodoInProgressIcon = base.Foreground(o.successMostSubtle)
-	s.Tool.TodoPendingIcon = base.Foreground(o.fgMoreSubtle)
-	s.Tool.TodoStatusNote = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
-	s.Tool.TodoItem = lipgloss.NewStyle().Foreground(o.fgBase)
-	s.Tool.TodoJustStarted = lipgloss.NewStyle().Foreground(o.fgBase)
-
 	// Loading indicators for images, skills
 	s.Tool.ResourceLoadedText = base.Foreground(o.success)
 	s.Tool.ResourceLoadedIndicator = base.Foreground(o.successMostSubtle)
@@ -1009,10 +1000,6 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Pills.QueueIconBase = lipgloss.NewStyle().Foreground(o.fgBase)
 	s.Pills.QueueGradFromColor = o.error
 	s.Pills.QueueGradToColor = o.secondary
-	s.Pills.TodoLabel = lipgloss.NewStyle().Foreground(o.fgBase)
-	s.Pills.TodoProgress = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
-	s.Pills.TodoCurrentTask = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
-	s.Pills.TodoSpinner = lipgloss.NewStyle().Foreground(o.successMostSubtle)
 	s.Pills.HelpKey = lipgloss.NewStyle().Foreground(o.fgMoreSubtle)
 	s.Pills.HelpText = lipgloss.NewStyle().Foreground(o.fgMostSubtle)
 	s.Pills.Area = base

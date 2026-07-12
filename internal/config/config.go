@@ -472,7 +472,6 @@ func allToolNames() []string {
 		"edit",
 		"glob",
 		"grep",
-		"todos",
 		"read",
 		"web_search",
 	}

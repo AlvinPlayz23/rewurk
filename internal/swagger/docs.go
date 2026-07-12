@@ -2774,12 +2774,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
-                "todos": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proto.Todo"
-                    }
-                },
                 "updated_at": {
                     "type": "integer"
                 }
@@ -3110,12 +3104,6 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
-                "todos": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proto.Todo"
-                    }
-                },
                 "updated_at": {
                     "type": "integer"
                 }
@@ -3211,20 +3199,6 @@ const docTemplate = `{
                 },
                 "state": {
                     "$ref": "#/definitions/proto.SkillDiscoveryState"
-                }
-            }
-        },
-        "proto.Todo": {
-            "type": "object",
-            "properties": {
-                "active_form": {
-                    "type": "string"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
                 }
             }
         },

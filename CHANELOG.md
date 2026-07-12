@@ -1,5 +1,19 @@
 # Changelog
 
+## Removed Todo Tool
+
+- Review result: 9/10.
+
+- Removed the legacy `todos` tool from the agent tool registry, coordinator wiring, prompts, permissions, UI tool rendering, and configuration defaults.
+- Removed todo persistence from sessions, including the DB `todos` column query handling, session model fields, protocol types, workspace conversions, and server events.
+- Deleted the todo tool implementation, tool description, chat renderer, and the obsolete todo migration.
+- Simplified the pills UI to only show queued prompts and removed todo-specific styles, spinners, command labels, and layout tests.
+- Updated swagger output, agent fixtures, UI docs, and tests so no active code path references todos.
+
+Validation:
+
+- Ran `go test ./internal/session ./internal/agent ./internal/config ./internal/proto ./internal/workspace ./internal/server ./internal/ui/chat ./internal/ui/dialog ./internal/ui/model ./internal/agent/tools` successfully.
+
 ## Merged Batched Edits Into Edit
 
 - Added `edits[]` support to the `edit` tool for multiple exact find-and-replace operations in one call.

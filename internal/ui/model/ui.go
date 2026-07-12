@@ -20,7 +20,6 @@ import (
 
 	"charm.land/bubbles/v2/help"
 	"charm.land/bubbles/v2/key"
-	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
@@ -276,10 +275,6 @@ type UI struct {
 	promptQueue        int
 	pillsView          string
 
-	// Todo spinner
-	todoSpinner    spinner.Model
-	todoIsSpinning bool
-
 	// mouse highlighting related state
 	lastClickTime time.Time
 
@@ -322,11 +317,6 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 		com.Styles.Completions.Match,
 	)
 
-	todoSpinner := spinner.New(
-		spinner.WithSpinner(spinner.MiniDot),
-		spinner.WithStyle(com.Styles.Pills.TodoSpinner),
-	)
-
 	// Attachments component
 	attachments := attachments.New(
 		attachments.NewRenderer(
@@ -354,7 +344,6 @@ func New(com *common.Common, initialSessionID string, continueLast bool) *UI {
 		header:              header,
 		completions:         comp,
 		attachments:         attachments,
-		todoSpinner:         todoSpinner,
 		notifyBackend:       notification.NoopBackend{},
 		notifyWindowFocused: true,
 		initialSessionID:    initialSessionID,
@@ -591,22 +580,11 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.setSessionMessages(msgs); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
-		if cmd := m.autoExpandPillsIfReasonable(); cmd != nil {
-			cmds = append(cmds, cmd)
-		}
 		// If a bang command was issued before the session finished
 		// loading, start it now that the chat list is stable.
 		if m.pendingBangCommand != "" {
 			cmds = append(cmds, m.runShellCommandInternal(m.pendingBangCommand, true))
 			m.pendingBangCommand = ""
-		}
-		if hasInProgressTodo(m.session.Todos) {
-			// only start spinner if there is an in-progress todo
-			if m.isAgentBusy() {
-				m.todoIsSpinning = true
-				cmds = append(cmds, m.todoSpinner.Tick)
-			}
-			m.updateLayoutAndSize()
 		}
 		// Reload prompt history for the new session.
 		m.historyReset()
@@ -649,26 +627,18 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 		if m.session != nil && msg.Payload.ID == m.session.ID {
-			prevHasInProgress := hasInProgressTodo(m.session.Todos)
 			prevPillsHeight := m.pillsAreaHeight()
 			m.session = &msg.Payload
-			if !prevHasInProgress && hasInProgressTodo(m.session.Todos) {
-				m.todoIsSpinning = true
-				cmds = append(cmds, m.todoSpinner.Tick)
-			}
 			// The pills panel reserves vertical space that the chat area
 			// must yield. Recompute the layout whenever that footprint
-			// changes (todos appearing, the list growing, etc.) so the
-			// box renders on first paint rather than waiting for a toggle.
-			// When the footprint is unchanged we still re-render the pill
-			// content so status changes (e.g. the in-progress spinner)
-			// show up.
+			// changes so the box renders on first paint rather than waiting
+			// for a toggle. When the footprint is unchanged we still re-render
+			// the pill content so queue status changes show up.
 			if m.pillsAreaHeight() != prevPillsHeight {
 				m.updateLayoutAndSize()
 			} else {
 				m.renderPills()
 			}
-			m.autoExpandPillsIfReasonable()
 		}
 	case pubsub.Event[message.Message]:
 		// Check if this is a child session message for an agent tool.
@@ -689,15 +659,6 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.updateSessionMessage(msg.Payload))
 		case pubsub.DeletedEvent:
 			m.chat.RemoveMessage(msg.Payload.ID)
-		}
-		// start the spinner if there is a new message
-		if hasInProgressTodo(m.session.Todos) && m.isAgentBusy() && !m.todoIsSpinning {
-			m.todoIsSpinning = true
-			cmds = append(cmds, m.todoSpinner.Tick)
-		}
-		// stop the spinner if the agent is not busy anymore
-		if m.todoIsSpinning && !m.isAgentBusy() {
-			m.todoIsSpinning = false
 		}
 		// there is a number of things that could change the pills here so we want to re-render
 		m.renderPills()
@@ -883,22 +844,6 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == uiChat {
 			m.chat.HideScrollbar(msg.seq)
 		}
-	case spinner.TickMsg:
-		if m.dialog.HasDialogs() {
-			// route to dialog
-			if cmd := m.handleDialogMsg(msg); cmd != nil {
-				cmds = append(cmds, cmd)
-			}
-		}
-		if m.state == uiChat && m.hasSession() && hasInProgressTodo(m.session.Todos) && m.todoIsSpinning {
-			var cmd tea.Cmd
-			m.todoSpinner, cmd = m.todoSpinner.Update(msg)
-			if cmd != nil {
-				m.renderPills()
-				cmds = append(cmds, cmd)
-			}
-		}
-
 	case tea.KeyPressMsg:
 		if cmd := m.handleKeyPressMsg(msg); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -2487,11 +2432,9 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 		m.layout = layout
 		m.updateSize()
 	} else if m.state == uiChat && m.hasSession() {
-		// Re-render pills on every draw so the box appears even when
-		// the layout footprint hasn't changed (e.g. todos arrived
-		// while the panel was collapsed). updateSize already calls
-		// renderPills, but only when the layout actually differs;
-		// this catches the steady-state case.
+		// Re-render pills on every draw so queue status changes appear even when
+		// the layout footprint has not changed. updateSize already calls
+		// renderPills, but only when the layout actually differs.
 		m.renderPills()
 	}
 
@@ -2690,9 +2633,6 @@ func (m *UI) ShortHelp() []key.Binding {
 				k.Chat.PageDown,
 				k.Chat.Copy,
 			)
-			if m.pillsExpanded && hasIncompleteTodos(m.session.Todos) && m.promptQueue > 0 {
-				binds = append(binds, k.Chat.PillLeft)
-			}
 		}
 	default:
 		// TODO: other states
@@ -2804,9 +2744,6 @@ func (m *UI) FullHelp() [][]key.Binding {
 					k.Chat.ClearHighlight,
 				},
 			)
-			if m.pillsExpanded && hasIncompleteTodos(m.session.Todos) && m.promptQueue > 0 {
-				binds = append(binds, []key.Binding{k.Chat.PillLeft})
-			}
 		}
 	default:
 		if m.session == nil {
@@ -3305,7 +3242,6 @@ func (m *UI) openCommandCompletions(startIndex int) tea.Cmd {
 			m.com,
 			m.currentSessionID(),
 			m.hasSession(),
-			m.hasSession() && hasIncompleteTodos(m.session.Todos),
 			m.promptQueue > 0,
 			m.customCommands,
 		)
@@ -3702,7 +3638,6 @@ func (m *UI) refreshStyles() {
 		t.Attachments.Text,
 		t.Attachments.Skill,
 	)
-	m.todoSpinner.Style = t.Pills.TodoSpinner
 	m.status.help.Styles = t.Help
 	m.chat.InvalidateRenderCaches()
 }
@@ -3903,8 +3838,6 @@ func (m *UI) cancelAgent() tea.Cmd {
 		}
 
 		m.com.Workspace.AgentCancel(m.session.ID)
-		// Stop the spinning todo indicator.
-		m.todoIsSpinning = false
 		m.renderPills()
 		return nil
 	}
@@ -4008,10 +3941,9 @@ func (m *UI) openCommandsDialog() tea.Cmd {
 	if hasSession {
 		sessionID = m.session.ID
 	}
-	hasTodos := hasSession && hasIncompleteTodos(m.session.Todos)
 	hasQueue := m.promptQueue > 0
 
-	commands, err := dialog.NewCommands(m.com, sessionID, hasSession, hasTodos, hasQueue, m.customCommands)
+	commands, err := dialog.NewCommands(m.com, sessionID, hasSession, hasQueue, m.customCommands)
 	if err != nil {
 		return util.ReportError(err)
 	}

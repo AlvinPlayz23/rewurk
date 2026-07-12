@@ -273,8 +273,6 @@ func NewToolMessageItem(
 		item = NewWebFetchToolMessageItem(sty, toolCall, result, canceled)
 	case tools.WebSearchToolName:
 		item = NewWebSearchToolMessageItem(sty, toolCall, result, canceled)
-	case tools.TodosToolName:
-		item = NewTodosToolMessageItem(sty, toolCall, result, canceled)
 	default:
 		item = NewGenericToolMessageItem(sty, toolCall, result, canceled)
 	}
@@ -1255,7 +1253,7 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 		return t.formatWebFetchResultForCopy()
 	case agent.AgentToolName:
 		return t.formatAgentResultForCopy()
-	case tools.GrepToolName, tools.GlobToolName, tools.TodosToolName:
+	case tools.GrepToolName, tools.GlobToolName:
 		return fmt.Sprintf("```\n%s\n```", t.result.Content)
 	default:
 		return t.result.Content
@@ -1498,8 +1496,6 @@ func prettifyToolName(name string) string {
 		return "Glob"
 	case tools.GrepToolName:
 		return "Grep"
-	case tools.TodosToolName:
-		return "To-Do"
 	case tools.ReadToolName:
 		return "Read"
 	default:
