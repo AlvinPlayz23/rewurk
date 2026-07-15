@@ -155,6 +155,11 @@ type (
 	creditsUpdatedMsg struct {
 		credits int
 	}
+	toolToggledMsg struct {
+		name    string
+		enabled bool
+		err     error
+	}
 )
 
 // UI represents the main user interface model.
@@ -196,6 +201,8 @@ type UI struct {
 
 	// isCanceling tracks whether the user has pressed escape once to cancel.
 	isCanceling bool
+	// toolTogglePending prevents overlapping tool-toggle commands.
+	toolTogglePending bool
 
 	// bangMode tracks whether the editor is in bang (!) shell mode.
 	bangMode     bool
@@ -912,6 +919,20 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case creditsUpdatedMsg:
 		m.hyperCredits = &msg.credits
+	case toolToggledMsg:
+		m.toolTogglePending = false
+		if toolsDialog, ok := m.dialog.Dialog(dialog.ToolsID).(*dialog.Tools); ok {
+			toolsDialog.Refresh()
+		}
+		if msg.err != nil {
+			cmds = append(cmds, util.ReportError(msg.err))
+			break
+		}
+		state := "disabled"
+		if msg.enabled {
+			state = "enabled"
+		}
+		cmds = append(cmds, util.CmdHandler(util.NewInfoMsg(fmt.Sprintf("%s %s", msg.name, state))))
 	case util.InfoMsg:
 		if msg.Type == util.InfoTypeError {
 			slog.Error("Error reported", "error", msg.Msg)
@@ -1417,6 +1438,13 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 	case dialog.ActionSelectTheme:
 		cmds = append(cmds, m.selectTheme(msg.Theme))
 		m.dialog.CloseDialog(dialog.ThemesID)
+	case dialog.ActionToggleTool:
+		if m.toolTogglePending {
+			cmds = append(cmds, util.ReportWarn("A tool update is already in progress"))
+			break
+		}
+		m.toolTogglePending = true
+		cmds = append(cmds, m.toggleExtraTool(msg.Name))
 	case dialog.ActionNewSession:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait before starting a new session..."))
@@ -3881,6 +3909,10 @@ func (m *UI) openDialog(id string) tea.Cmd {
 		if cmd := m.openThemesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
 		}
+	case dialog.ToolsID:
+		if cmd := m.openToolsDialog(); cmd != nil {
+			cmds = append(cmds, cmd)
+		}
 	case dialog.FilePickerID:
 		if cmd := m.openFilesDialog(); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -3991,6 +4023,24 @@ func (m *UI) openThemesDialog() tea.Cmd {
 	themesDialog := dialog.NewThemes(m.com)
 	m.dialog.OpenDialog(themesDialog)
 	return nil
+}
+
+// openToolsDialog opens the extra tools dialog.
+func (m *UI) openToolsDialog() tea.Cmd {
+	if m.dialog.ContainsDialog(dialog.ToolsID) {
+		m.dialog.BringToFront(dialog.ToolsID)
+		return nil
+	}
+
+	m.dialog.OpenDialog(dialog.NewTools(m.com))
+	return nil
+}
+
+func (m *UI) toggleExtraTool(name string) tea.Cmd {
+	return func() tea.Msg {
+		enabled, err := m.com.Workspace.ToggleExtraTool(context.Background(), name)
+		return toolToggledMsg{name: name, enabled: enabled, err: err}
+	}
 }
 
 // openSessionsDialog opens the sessions dialog. If the dialog is already open,

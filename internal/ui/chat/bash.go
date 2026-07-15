@@ -18,15 +18,6 @@ type legacyBashParams struct {
 	RunInBackground bool   `json:"run_in_background,omitempty"`
 }
 
-type legacyJobParams struct {
-	ShellID string `json:"shell_id"`
-}
-
-type legacyJobResponseMetadata struct {
-	Command     string `json:"command"`
-	Description string `json:"description"`
-}
-
 // -----------------------------------------------------------------------------
 // Bash Tool
 // -----------------------------------------------------------------------------
@@ -110,108 +101,6 @@ func (b *BashToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *
 	bodyWidth := max(1, cappedWidth-toolBodyLeftPaddingTotal)
 	body := sty.Tool.Body.Render(toolOutputPlainContent(sty, output, bodyWidth, opts.ExpandedContent))
 	return joinToolParts(sty, header, body)
-}
-
-// -----------------------------------------------------------------------------
-// Job Output Tool
-// -----------------------------------------------------------------------------
-
-// JobOutputToolMessageItem is a message item for job_output tool calls.
-type JobOutputToolMessageItem struct {
-	*baseToolMessageItem
-}
-
-var _ ToolMessageItem = (*JobOutputToolMessageItem)(nil)
-
-// NewJobOutputToolMessageItem creates a new [JobOutputToolMessageItem].
-func NewJobOutputToolMessageItem(
-	sty *styles.Styles,
-	toolCall message.ToolCall,
-	result *message.ToolResult,
-	canceled bool,
-) ToolMessageItem {
-	return newBaseToolMessageItem(sty, toolCall, result, &JobOutputToolRenderContext{}, canceled)
-}
-
-// JobOutputToolRenderContext renders job_output tool messages.
-type JobOutputToolRenderContext struct{}
-
-// RenderTool implements the [ToolRenderer] interface.
-func (j *JobOutputToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
-	cappedWidth := cappedMessageWidth(width)
-	if opts.IsPending() {
-		return pendingTool(sty, "Job", opts.Anim, opts.Compact)
-	}
-
-	var params legacyJobParams
-	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
-		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
-	}
-
-	var description string
-	if opts.HasResult() && opts.Result.Metadata != "" {
-		var meta legacyJobResponseMetadata
-		if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil {
-			description = cmp.Or(meta.Description, meta.Command)
-		}
-	}
-
-	content := ""
-	if opts.HasResult() {
-		content = opts.Result.Content
-	}
-	return renderJobTool(sty, opts, cappedWidth, "Output", params.ShellID, description, content)
-}
-
-// -----------------------------------------------------------------------------
-// Job Kill Tool
-// -----------------------------------------------------------------------------
-
-// JobKillToolMessageItem is a message item for job_kill tool calls.
-type JobKillToolMessageItem struct {
-	*baseToolMessageItem
-}
-
-var _ ToolMessageItem = (*JobKillToolMessageItem)(nil)
-
-// NewJobKillToolMessageItem creates a new [JobKillToolMessageItem].
-func NewJobKillToolMessageItem(
-	sty *styles.Styles,
-	toolCall message.ToolCall,
-	result *message.ToolResult,
-	canceled bool,
-) ToolMessageItem {
-	return newBaseToolMessageItem(sty, toolCall, result, &JobKillToolRenderContext{}, canceled)
-}
-
-// JobKillToolRenderContext renders job_kill tool messages.
-type JobKillToolRenderContext struct{}
-
-// RenderTool implements the [ToolRenderer] interface.
-func (j *JobKillToolRenderContext) RenderTool(sty *styles.Styles, width int, opts *ToolRenderOpts) string {
-	cappedWidth := cappedMessageWidth(width)
-	if opts.IsPending() {
-		return pendingTool(sty, "Job", opts.Anim, opts.Compact)
-	}
-
-	var params legacyJobParams
-	if err := json.Unmarshal([]byte(opts.ToolCall.Input), &params); err != nil {
-		return toolErrorContent(sty, &message.ToolResult{Content: "Invalid parameters"}, cappedWidth)
-	}
-
-	var description string
-	if opts.HasResult() && opts.Result.Metadata != "" {
-		var meta legacyJobResponseMetadata
-		if err := json.Unmarshal([]byte(opts.Result.Metadata), &meta); err == nil {
-			description = cmp.Or(meta.Description, meta.Command)
-		}
-	}
-
-	content := ""
-	if opts.HasResult() {
-		content = opts.Result.Content
-	}
-	return renderJobTool(sty, opts, cappedWidth, "Kill", params.ShellID, description, content)
 }
 
 // renderJobTool renders a job-related tool with the common pattern:

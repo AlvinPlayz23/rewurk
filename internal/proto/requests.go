@@ -34,6 +34,18 @@ type ConfigCompactRequest struct {
 	Enabled bool         `json:"enabled"`
 }
 
+// ConfigToolToggleRequest represents a request to toggle an extra tool.
+type ConfigToolToggleRequest struct {
+	Name string `json:"name"`
+}
+
+// ConfigToolToggleResponse reports the persisted state and any live refresh
+// failure that occurred after the setting was saved.
+type ConfigToolToggleResponse struct {
+	Enabled      bool   `json:"enabled"`
+	RefreshError string `json:"refresh_error,omitempty"`
+}
+
 // APIKeyKind discriminates the kind of credential carried in a
 // ConfigProviderKeyRequest. JSON's `any` loses Go type information, so
 // the wire format names the kind explicitly and the server decodes

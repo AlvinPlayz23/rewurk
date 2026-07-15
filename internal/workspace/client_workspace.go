@@ -60,10 +60,15 @@ func NewClientWorkspace(c *client.Client, ws proto.Workspace) *ClientWorkspace {
 // refreshWorkspace re-fetches the workspace from the server, updating
 // the cached snapshot. Called after config-mutating operations.
 func (w *ClientWorkspace) refreshWorkspace() {
+	if err := w.refreshWorkspaceResult(); err != nil {
+		slog.Error("Failed to refresh workspace", "error", err)
+	}
+}
+
+func (w *ClientWorkspace) refreshWorkspaceResult() error {
 	updated, err := w.client.GetWorkspace(context.Background(), w.workspaceID())
 	if err != nil {
-		slog.Error("Failed to refresh workspace", "error", err)
-		return
+		return err
 	}
 	if updated.Config != nil {
 		updated.Config.SetupAgents()
@@ -71,6 +76,7 @@ func (w *ClientWorkspace) refreshWorkspace() {
 	w.mu.Lock()
 	w.ws = *updated
 	w.mu.Unlock()
+	return nil
 }
 
 // cached returns a snapshot of the cached workspace.
@@ -405,6 +411,18 @@ func (w *ClientWorkspace) SetConfigField(scope config.Scope, key string, value a
 		w.refreshWorkspace()
 	}
 	return err
+}
+
+func (w *ClientWorkspace) ToggleExtraTool(ctx context.Context, name string) (bool, error) {
+	enabled, toggleErr := w.client.ToggleExtraTool(ctx, w.workspaceID(), name)
+	refreshErr := w.refreshWorkspaceResult()
+	if toggleErr != nil {
+		return enabled, toggleErr
+	}
+	if refreshErr != nil {
+		return enabled, fmt.Errorf("tool setting saved but failed to refresh local config: %w", refreshErr)
+	}
+	return enabled, nil
 }
 
 func (w *ClientWorkspace) RemoveConfigField(scope config.Scope, key string) error {

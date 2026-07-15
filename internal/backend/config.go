@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/charmbracelet/crush/internal/agent"
 	"github.com/charmbracelet/crush/internal/config"
@@ -36,6 +37,27 @@ func (b *Backend) SetConfigField(workspaceID string, scope config.Scope, key str
 	}
 	publishConfigChanged(ws)
 	return nil
+}
+
+// ToggleExtraTool atomically toggles an extra tool, then refreshes the live
+// agent. A refresh failure is returned in the response because the setting has
+// already been saved successfully.
+func (b *Backend) ToggleExtraTool(ctx context.Context, workspaceID, name string) (proto.ConfigToolToggleResponse, error) {
+	ws, err := b.GetWorkspace(workspaceID)
+	if err != nil {
+		return proto.ConfigToolToggleResponse{}, err
+	}
+	enabled, err := ws.Cfg.ToggleExtraTool(name)
+	if err != nil {
+		return proto.ConfigToolToggleResponse{}, err
+	}
+
+	result := proto.ConfigToolToggleResponse{Enabled: enabled}
+	publishConfigChanged(ws)
+	if err := ws.UpdateAgentModel(ctx); err != nil {
+		result.RefreshError = fmt.Sprintf("tool setting saved but failed to refresh the agent: %v", err)
+	}
+	return result, nil
 }
 
 // RemoveConfigField removes a key from the config file for the given

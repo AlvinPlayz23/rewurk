@@ -675,9 +675,6 @@ func quickStyle(o quickStyleOpts) Styles {
 	s.Tool.AgentTaskTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.infoMoreSubtle).Foreground(o.onPrimary)
 	s.Tool.AgentPrompt = base.Italic(true).Foreground(o.infoMostSubtle)
 
-	// Agentic fetch styles
-	s.Tool.AgenticFetchPromptTag = base.Bold(true).Padding(0, 1).MarginLeft(2).Background(o.success).Foreground(o.separator)
-
 	// Loading indicators for images, skills
 	s.Tool.ResourceLoadedText = base.Foreground(o.success)
 	s.Tool.ResourceLoadedIndicator = base.Foreground(o.successMostSubtle)

@@ -29,31 +29,6 @@ const responseContextHeight = 10
 // toolBodyLeftPaddingTotal accounts for the per-line tree gutter before body content.
 const toolBodyLeftPaddingTotal = 5
 
-// Legacy tool names are retained here so saved sessions created by older
-// versions can still render their tool calls.
-const (
-	legacyAgenticFetchToolName = "agentic_fetch"
-	legacyFetchToolName        = "fetch"
-	legacyJobKillToolName      = "job_kill"
-	legacyJobOutputToolName    = "job_output"
-	legacyWebFetchToolName     = "web_fetch"
-)
-
-type legacyFetchParams struct {
-	URL     string `json:"url"`
-	Format  string `json:"format"`
-	Timeout int    `json:"timeout,omitempty"`
-}
-
-type legacyAgenticFetchParams struct {
-	URL    string `json:"url,omitempty"`
-	Prompt string `json:"prompt"`
-}
-
-type legacyWebFetchParams struct {
-	URL string `json:"url"`
-}
-
 // ToolStatus represents the current state of a tool call.
 type ToolStatus int
 
@@ -251,10 +226,6 @@ func NewToolMessageItem(
 	switch toolCall.Name {
 	case tools.BashToolName:
 		item = NewBashToolMessageItem(sty, toolCall, result, canceled)
-	case legacyJobOutputToolName:
-		item = NewJobOutputToolMessageItem(sty, toolCall, result, canceled)
-	case legacyJobKillToolName:
-		item = NewJobKillToolMessageItem(sty, toolCall, result, canceled)
 	case tools.ReadToolName:
 		item = NewReadToolMessageItem(sty, toolCall, result, canceled)
 	case tools.EditToolName:
@@ -263,14 +234,8 @@ func NewToolMessageItem(
 		item = NewGlobToolMessageItem(sty, toolCall, result, canceled)
 	case tools.GrepToolName:
 		item = NewGrepToolMessageItem(sty, toolCall, result, canceled)
-	case legacyFetchToolName:
-		item = NewFetchToolMessageItem(sty, toolCall, result, canceled)
 	case agent.AgentToolName:
 		item = NewAgentToolMessageItem(sty, toolCall, result, canceled)
-	case legacyAgenticFetchToolName:
-		item = NewAgenticFetchToolMessageItem(sty, toolCall, result, canceled)
-	case legacyWebFetchToolName:
-		item = NewWebFetchToolMessageItem(sty, toolCall, result, canceled)
 	case tools.WebSearchToolName:
 		item = NewWebSearchToolMessageItem(sty, toolCall, result, canceled)
 	default:
@@ -1146,36 +1111,6 @@ func (t *baseToolMessageItem) formatParametersForCopy() string {
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
 			return fmt.Sprintf("**File:** %s", fsext.PrettyPath(params.FilePath))
 		}
-	case legacyFetchToolName:
-		var params legacyFetchParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			var parts []string
-			parts = append(parts, fmt.Sprintf("**URL:** %s", params.URL))
-			if params.Format != "" {
-				parts = append(parts, fmt.Sprintf("**Format:** %s", params.Format))
-			}
-			if params.Timeout > 0 {
-				parts = append(parts, fmt.Sprintf("**Timeout:** %ds", params.Timeout))
-			}
-			return strings.Join(parts, "\n")
-		}
-	case legacyAgenticFetchToolName:
-		var params legacyAgenticFetchParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			var parts []string
-			if params.URL != "" {
-				parts = append(parts, fmt.Sprintf("**URL:** %s", params.URL))
-			}
-			if params.Prompt != "" {
-				parts = append(parts, fmt.Sprintf("**Prompt:** %s", params.Prompt))
-			}
-			return strings.Join(parts, "\n")
-		}
-	case legacyWebFetchToolName:
-		var params legacyWebFetchParams
-		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
-			return fmt.Sprintf("**URL:** %s", params.URL)
-		}
 	case tools.GrepToolName:
 		var params tools.GrepParams
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
@@ -1245,12 +1180,6 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 		return t.formatViewResultForCopy()
 	case tools.EditToolName:
 		return t.formatEditResultForCopy()
-	case legacyFetchToolName:
-		return t.formatFetchResultForCopy()
-	case legacyAgenticFetchToolName:
-		return t.formatAgenticFetchResultForCopy()
-	case legacyWebFetchToolName:
-		return t.formatWebFetchResultForCopy()
 	case agent.AgentToolName:
 		return t.formatAgentResultForCopy()
 	case tools.GrepToolName, tools.GlobToolName:
@@ -1382,80 +1311,6 @@ func (t *baseToolMessageItem) formatEditResultForCopy() string {
 	return result.String()
 }
 
-// formatFetchResultForCopy formats fetch tool results for clipboard.
-func (t *baseToolMessageItem) formatFetchResultForCopy() string {
-	if t.result == nil {
-		return ""
-	}
-
-	var params legacyFetchParams
-	if json.Unmarshal([]byte(t.toolCall.Input), &params) != nil {
-		return t.result.Content
-	}
-
-	var result strings.Builder
-	if params.URL != "" {
-		fmt.Fprintf(&result, "URL: %s\n", params.URL)
-	}
-	if params.Format != "" {
-		fmt.Fprintf(&result, "Format: %s\n", params.Format)
-	}
-	if params.Timeout > 0 {
-		fmt.Fprintf(&result, "Timeout: %ds\n", params.Timeout)
-	}
-	result.WriteString("\n")
-
-	result.WriteString(t.result.Content)
-
-	return result.String()
-}
-
-// formatAgenticFetchResultForCopy formats agentic fetch tool results for clipboard.
-func (t *baseToolMessageItem) formatAgenticFetchResultForCopy() string {
-	if t.result == nil {
-		return ""
-	}
-
-	var params legacyAgenticFetchParams
-	if json.Unmarshal([]byte(t.toolCall.Input), &params) != nil {
-		return t.result.Content
-	}
-
-	var result strings.Builder
-	if params.URL != "" {
-		fmt.Fprintf(&result, "URL: %s\n", params.URL)
-	}
-	if params.Prompt != "" {
-		fmt.Fprintf(&result, "Prompt: %s\n\n", params.Prompt)
-	}
-
-	result.WriteString("```markdown\n")
-	result.WriteString(t.result.Content)
-	result.WriteString("\n```")
-
-	return result.String()
-}
-
-// formatWebFetchResultForCopy formats web fetch tool results for clipboard.
-func (t *baseToolMessageItem) formatWebFetchResultForCopy() string {
-	if t.result == nil {
-		return ""
-	}
-
-	var params legacyWebFetchParams
-	if json.Unmarshal([]byte(t.toolCall.Input), &params) != nil {
-		return t.result.Content
-	}
-
-	var result strings.Builder
-	fmt.Fprintf(&result, "URL: %s\n\n", params.URL)
-	result.WriteString("```markdown\n")
-	result.WriteString(t.result.Content)
-	result.WriteString("\n```")
-
-	return result.String()
-}
-
 // formatAgentResultForCopy formats agent tool results for clipboard.
 func (t *baseToolMessageItem) formatAgentResultForCopy() string {
 	if t.result == nil {
@@ -1478,18 +1333,8 @@ func prettifyToolName(name string) string {
 		return "Agent"
 	case tools.BashToolName:
 		return "Bash"
-	case legacyJobOutputToolName:
-		return "Job: Output"
-	case legacyJobKillToolName:
-		return "Job: Kill"
 	case tools.EditToolName:
 		return "Edit"
-	case legacyFetchToolName:
-		return "Fetch"
-	case legacyAgenticFetchToolName:
-		return "Agentic Fetch"
-	case legacyWebFetchToolName:
-		return "Fetch"
 	case tools.WebSearchToolName:
 		return "Search"
 	case tools.GlobToolName:

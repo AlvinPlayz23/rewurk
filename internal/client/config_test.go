@@ -99,3 +99,39 @@ func TestSetProviderAPIKeyNilOAuthFailsLocally(t *testing.T) {
 	err := c.SetProviderAPIKey(context.Background(), "ws1", config.ScopeGlobal, "x", tok)
 	require.Error(t, err)
 }
+
+func TestToggleExtraToolReturnsPersistedState(t *testing.T) {
+	t.Parallel()
+
+	var got proto.ConfigToolToggleRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(proto.ConfigToolToggleResponse{Enabled: true}))
+	}))
+	defer srv.Close()
+
+	c := captureClient(t, srv)
+	enabled, err := c.ToggleExtraTool(context.Background(), "ws1", "glob")
+	require.NoError(t, err)
+	require.True(t, enabled)
+	require.Equal(t, "glob", got.Name)
+}
+
+func TestToggleExtraToolSurfacesLiveRefreshError(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(proto.ConfigToolToggleResponse{
+			Enabled:      true,
+			RefreshError: "setting saved but refresh failed",
+		}))
+	}))
+	defer srv.Close()
+
+	c := captureClient(t, srv)
+	enabled, err := c.ToggleExtraTool(context.Background(), "ws1", "glob")
+	require.True(t, enabled)
+	require.ErrorContains(t, err, "setting saved but refresh failed")
+}

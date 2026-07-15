@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -26,6 +27,29 @@ func (c *Client) SetConfigField(ctx context.Context, id string, scope config.Sco
 		return fmt.Errorf("failed to set config field: status code %d", rsp.StatusCode)
 	}
 	return nil
+}
+
+// ToggleExtraTool toggles an extra tool and returns its new enabled state.
+func (c *Client) ToggleExtraTool(ctx context.Context, id, name string) (bool, error) {
+	rsp, err := c.post(ctx, fmt.Sprintf("/workspaces/%s/config/tools/toggle", id), nil, jsonBody(proto.ConfigToolToggleRequest{
+		Name: name,
+	}), http.Header{"Content-Type": []string{"application/json"}})
+	if err != nil {
+		return false, fmt.Errorf("failed to toggle extra tool: %w", err)
+	}
+	defer rsp.Body.Close()
+	if rsp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("failed to toggle extra tool: status code %d", rsp.StatusCode)
+	}
+
+	var result proto.ConfigToolToggleResponse
+	if err := json.NewDecoder(rsp.Body).Decode(&result); err != nil {
+		return false, fmt.Errorf("failed to decode extra tool toggle response: %w", err)
+	}
+	if result.RefreshError != "" {
+		return result.Enabled, errors.New(result.RefreshError)
+	}
+	return result.Enabled, nil
 }
 
 // RemoveConfigField removes a config key on the server.

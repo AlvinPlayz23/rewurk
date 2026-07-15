@@ -477,9 +477,12 @@ func allToolNames() []string {
 	}
 }
 
+// ExtraToolNames lists built-in tools that are opt-in by default.
+var ExtraToolNames = []string{"glob", "grep"}
+
 func resolveAllowedTools(allTools []string, disabledTools []string) []string {
 	if disabledTools == nil {
-		return allTools
+		disabledTools = ExtraToolNames
 	}
 	// filter out disabled tools (exclude mode)
 	return filterSlice(allTools, disabledTools, false)

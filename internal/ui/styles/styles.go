@@ -337,9 +337,6 @@ type Styles struct {
 		AgentTaskTag lipgloss.Style // Agent task tag (blue background, bold)
 		AgentPrompt  lipgloss.Style // Agent prompt text
 
-		// Agentic fetch styles
-		AgenticFetchPromptTag lipgloss.Style // Agentic fetch prompt tag (green background, bold)
-
 		// Images and external resources
 		ResourceLoadedText      lipgloss.Style
 		ResourceLoadedIndicator lipgloss.Style

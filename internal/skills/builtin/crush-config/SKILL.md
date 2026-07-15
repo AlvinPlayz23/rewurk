@@ -158,6 +158,10 @@ reviewed.
 
 Other options: `context_paths`, `progress`, `notification_style`, `disable_auto_summarize`, `disable_metrics`, `disable_provider_auto_update`, `disable_default_providers`, `data_directory`, `initialize_as`.
 
+`glob` and `grep` are extra tools that are disabled by default. In the TUI,
+use `/tools` to enable or disable them; the result is stored in
+the workspace's `options.disabled_tools` setting.
+
 ## User-Invocable Skills
 
 Skills can be made invocable as commands from the commands palette. Add `user-invocable: true` to the skill's YAML frontmatter:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -82,6 +83,92 @@ func TestConfigStore_SetConfigField_GlobalScopeAlwaysWorks(t *testing.T) {
 	data, err := os.ReadFile(globalPath)
 	require.NoError(t, err)
 	require.Contains(t, string(data), `"foo"`)
+}
+
+func TestConfigStore_ToggleExtraTool(t *testing.T) {
+	dir := t.TempDir()
+	workspacePath := filepath.Join(dir, "crush.json")
+	store := &ConfigStore{
+		config:        &Config{Options: &Options{}},
+		workspacePath: workspacePath,
+	}
+
+	enabled, err := store.ToggleExtraTool("glob")
+	require.NoError(t, err)
+	require.True(t, enabled)
+	require.Equal(t, []string{"grep"}, store.Config().Options.DisabledTools)
+	data, err := os.ReadFile(workspacePath)
+	require.NoError(t, err)
+	require.Equal(t, `["grep"]`, gjson.GetBytes(data, "options.disabled_tools").Raw)
+
+	enabled, err = store.ToggleExtraTool("glob")
+	require.NoError(t, err)
+	require.False(t, enabled)
+	require.Equal(t, []string{"glob", "grep"}, store.Config().Options.DisabledTools)
+}
+
+func TestConfigStore_ToggleExtraToolConcurrent(t *testing.T) {
+	dir := t.TempDir()
+	store := &ConfigStore{
+		config:        &Config{Options: &Options{}},
+		workspacePath: filepath.Join(dir, "crush.json"),
+	}
+
+	var wg sync.WaitGroup
+	errs := make(chan error, len(ExtraToolNames))
+	for _, name := range ExtraToolNames {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := store.ToggleExtraTool(name)
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	require.Empty(t, store.Config().Options.DisabledTools)
+}
+
+func TestConfigStore_ToggleExtraToolConcurrentStores(t *testing.T) {
+	dir := t.TempDir()
+	workspacePath := filepath.Join(dir, "crush.json")
+	newStore := func() *ConfigStore {
+		return &ConfigStore{
+			config:        &Config{Options: &Options{}},
+			workspacePath: workspacePath,
+		}
+	}
+	stores := []*ConfigStore{newStore(), newStore()}
+
+	var wg sync.WaitGroup
+	errs := make(chan error, len(ExtraToolNames))
+	for i, name := range ExtraToolNames {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := stores[i].ToggleExtraTool(name)
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+
+	data, err := os.ReadFile(workspacePath)
+	require.NoError(t, err)
+	require.Equal(t, `[]`, gjson.GetBytes(data, "options.disabled_tools").Raw)
+}
+
+func TestConfigStore_ToggleExtraToolRejectsUnknownTool(t *testing.T) {
+	store := &ConfigStore{config: &Config{Options: &Options{}}}
+
+	_, err := store.ToggleExtraTool("bash")
+	require.ErrorContains(t, err, "unknown extra tool")
 }
 
 func TestConfigStore_RemoveConfigField_WorkspaceScopeGuard(t *testing.T) {

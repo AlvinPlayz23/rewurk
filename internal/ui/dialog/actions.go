@@ -60,6 +60,9 @@ type (
 	ActionSelectTheme struct {
 		Theme string
 	}
+	ActionToggleTool struct {
+		Name string
+	}
 	ActionToggleTransparentBackground struct{}
 	ActionInitializeProject           struct{}
 	ActionSummarize                   struct {

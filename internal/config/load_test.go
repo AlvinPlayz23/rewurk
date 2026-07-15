@@ -693,6 +693,19 @@ func TestConfig_setupAgentsWithNoDisabledTools(t *testing.T) {
 	assert.Equal(t, []string{"glob", "grep", "read"}, taskAgent.AllowedTools)
 }
 
+func TestConfig_setupAgentsWithDefaultDisabledTools(t *testing.T) {
+	cfg := &Config{Options: &Options{}}
+
+	cfg.SetupAgents()
+	coderAgent, ok := cfg.Agents[AgentCoder]
+	require.True(t, ok)
+	assert.Equal(t, []string{"agent", "bash", "edit", "read", "web_search"}, coderAgent.AllowedTools)
+
+	taskAgent, ok := cfg.Agents[AgentTask]
+	require.True(t, ok)
+	assert.Equal(t, []string{"read"}, taskAgent.AllowedTools)
+}
+
 func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {
 	cfg := &Config{
 		Options: &Options{

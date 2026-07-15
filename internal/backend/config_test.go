@@ -67,6 +67,16 @@ func TestSetConfigField_PublishesConfigChanged(t *testing.T) {
 	awaitConfigChanged(t, evc, ws.ID)
 }
 
+func TestToggleExtraTool_PersistsAndPublishesConfigChanged(t *testing.T) {
+	b, ws, evc := newPublishingWorkspace(t)
+
+	result, err := b.ToggleExtraTool(context.Background(), ws.ID, "glob")
+	require.NoError(t, err)
+	require.True(t, result.Enabled)
+	require.NotContains(t, ws.Cfg.Config().Options.DisabledTools, "glob")
+	awaitConfigChanged(t, evc, ws.ID)
+}
+
 func TestRemoveConfigField_PublishesConfigChanged(t *testing.T) {
 	b, ws, evc := newPublishingWorkspace(t)
 

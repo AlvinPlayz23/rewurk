@@ -1,5 +1,23 @@
 # Changelog
 
+## Added /tools Command for Extra Tools
+
+- Added a `/tools` slash command that opens a dialog for enabling or disabling extra tools (`glob` and `grep`).
+- Extra tools are disabled by default. Omitting `options.disabled_tools` from config disables extras; setting it to `[]` keeps all tools enabled.
+- The toggle persists to `options.disabled_tools` in the workspace config and refreshes the running agent's tool set live.
+- Renamed the concept of disabled tools in the prompt: `coder.md.tpl` and `agent_tool.md` no longer hardcode specific tool names, so disabled extras don't confuse the model.
+- Added `config.ExtraToolNames` catalog so extra tools are defined in one place.
+- Added `ActionToggleTool`, `toolToggledMsg`, `openToolsDialog()`, and `toggleExtraTool()` to the dialog and UI model.
+- Added `internal/ui/dialog/tools.go` with a filterable list showing each extra tool's enabled/disabled status.
+- Updated `README.md` and `crush-config` skill docs to document extra tools and `/tools`.
+- Added `TestConfig_setupAgentsWithDefaultDisabledTools` to verify default-disabled behavior.
+
+Validation:
+
+- Ran `go test ./internal/ui/dialog ./internal/ui/model` successfully.
+- Ran `go test ./internal/config -run "TestConfig_setupAgents"` successfully.
+- Ran `go build ./...` successfully.
+
 ## Removed Todo Tool
 
 - Review result: 9/10.

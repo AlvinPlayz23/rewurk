@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -294,6 +295,17 @@ func (w *AppWorkspace) SetProviderAPIKey(scope config.Scope, providerID string, 
 
 func (w *AppWorkspace) SetConfigField(scope config.Scope, key string, value any) error {
 	return w.store.SetConfigField(scope, key, value)
+}
+
+func (w *AppWorkspace) ToggleExtraTool(ctx context.Context, name string) (bool, error) {
+	enabled, err := w.store.ToggleExtraTool(name)
+	if err != nil {
+		return false, err
+	}
+	if err := w.app.UpdateAgentModel(ctx); err != nil {
+		return enabled, fmt.Errorf("tool setting saved but failed to refresh the agent: %w", err)
+	}
+	return enabled, nil
 }
 
 func (w *AppWorkspace) RemoveConfigField(scope config.Scope, key string) error {

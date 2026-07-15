@@ -439,6 +439,73 @@ func (s *ConfigStore) SetCompactMode(scope Scope, enabled bool) error {
 	})
 }
 
+// ToggleExtraTool toggles an opt-in tool for the current workspace and returns
+// its new enabled state. The read-modify-write is serialized so concurrent
+// callers cannot overwrite each other's changes.
+func (s *ConfigStore) ToggleExtraTool(name string) (bool, error) {
+	if !slices.Contains(ExtraToolNames, name) {
+		return false, fmt.Errorf("unknown extra tool %q", name)
+	}
+
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	current := s.Config()
+	if current == nil {
+		return false, fmt.Errorf("configuration not found")
+	}
+	nc := current.cloneForWrite()
+	if nc.Options == nil {
+		nc.Options = &Options{}
+	}
+
+	var (
+		disabled []string
+		enabled  bool
+	)
+	err := s.atomicWrite(ScopeWorkspace, func(data []byte) ([]byte, error) {
+		configured := gjson.GetBytes(data, "options.disabled_tools")
+		if configured.Exists() {
+			if err := json.Unmarshal([]byte(configured.Raw), &disabled); err != nil {
+				return nil, fmt.Errorf("decode workspace disabled tools: %w", err)
+			}
+			if disabled == nil {
+				disabled = slices.Clone(ExtraToolNames)
+			}
+		} else {
+			disabled = slices.Clone(nc.Options.DisabledTools)
+			if disabled == nil {
+				disabled = slices.Clone(ExtraToolNames)
+			}
+		}
+
+		enabled = slices.Contains(disabled, name)
+		if enabled {
+			disabled = slices.DeleteFunc(disabled, func(tool string) bool { return tool == name })
+		} else {
+			disabled = append(disabled, name)
+			slices.Sort(disabled)
+		}
+
+		updated, err := sjson.Set(string(data), "options.disabled_tools", disabled)
+		if err != nil {
+			return nil, fmt.Errorf("set workspace disabled tools: %w", err)
+		}
+		return []byte(updated), nil
+	})
+	if err != nil {
+		return false, err
+	}
+
+	nc.Options.DisabledTools = disabled
+	nc.SetupAgents()
+	s.setConfig(nc)
+	if path, err := s.configPath(ScopeWorkspace); err == nil {
+		s.captureStalenessSnapshot(append(slices.Clone(s.loadedPaths), path))
+	}
+	return enabled, nil
+}
+
 // SetTransparentBackground sets the transparent background setting and persists it.
 func (s *ConfigStore) SetTransparentBackground(scope Scope, enabled bool) error {
 	return s.update(scope, func(c *Config) map[string]any {

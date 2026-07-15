@@ -366,6 +366,10 @@ If you'd like to prevent Crush from using certain built-in tools entirely, you
 can disable them via the `options.disabled_tools` list. Disabled tools are
 completely hidden from the agent.
 
+The `glob` and `grep` search tools are extra tools and are disabled by default.
+Use the `/tools` command in the TUI to enable or disable them. The selection is
+saved to the workspace's `options.disabled_tools` setting.
+
 ```json
 {
   "$schema": "https://charm.land/crush.json",
