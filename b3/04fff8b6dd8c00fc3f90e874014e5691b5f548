@@ -1,0 +1,110 @@
+internal/server/config.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 39-69
+internal/ui/dialog/commands.go
+  s_fa0f2510a5f50f::t_0aa215a3a493d4 421-422
+internal/config/store.go
+  s_7fb9332008182e::t_2ebe13c0fdcd45 462-471,475-480,482-496,499-501
+  s_0338a0f83c8b69::t_9d98a82ac697dd 442-454,456-461,481,497-498,502-508
+  s_b3d3ff62198592::t_61fa414ad4c70a 455
+  s_a530518cd7f90b::t_a6e26a49fb5ed9 472-474
+internal/config/load_test.go
+  s_fa0f2510a5f50f::t_541532f3fa14c0 696-708
+internal/workspace/workspace.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 103
+internal/workspace/app_workspace.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 6,300-308
+  s_0338a0f83c8b69::t_5506ce3361c3d2 309-310
+internal/server/server.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 191
+internal/ui/dialog/tools.go
+  s_fa0f2510a5f50f::t_0aa215a3a493d4 1-222
+internal/agent/templates/agent_tool.md
+  s_fa0f2510a5f50f::t_1dc34a5fe8b2b6 1
+internal/backend/config.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 5,42-60
+  s_0338a0f83c8b69::t_2a6d4ba694f6ed 61-62
+internal/config/store_test.go
+  s_7fb9332008182e::t_2ebe13c0fdcd45 135-166,172
+  s_57831b47042d16::t_2ddafeb0fd0e23 9,88-99,103-134,167-171
+  s_b3d3ff62198592::t_61fa414ad4c70a 100-102
+  s_7fb9332008182e::t_5755a80bc9b98a 173
+internal/config/config.go
+  s_fa0f2510a5f50f::t_1dc34a5fe8b2b6 480-482,485
+internal/workspace/client_workspace.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 63-68,71,79,416-426
+  s_0338a0f83c8b69::t_28f59ff007dced 427
+internal/backend/config_test.go
+  s_57831b47042d16::t_2ddafeb0fd0e23 70-79
+CHANELOG.md
+  s_0338a0f83c8b69::t_9d98a82ac697dd 7
+  s_fa0f2510a5f50f::t_ab5dda9ac891f5 3-6,8-20
+internal/proto/requests.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 37-48
+internal/ui/dialog/actions.go
+  s_fa0f2510a5f50f::t_0aa215a3a493d4 63-65
+internal/client/config.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 6,32-52
+  s_0338a0f83c8b69::t_ed24839044c1d6 53-54
+internal/client/config_test.go
+  s_57831b47042d16::t_2ddafeb0fd0e23 102-137
+internal/ui/model/ui.go
+  s_0338a0f83c8b69::t_9d98a82ac697dd 204-205,923-926,1442-1446,4041-4042
+  s_fa0f2510a5f50f::t_62f94ebb5dd23a 158-162,922,927-935,1441,1447,3912-3915,4028-4040,4043-4044
+  s_fa0f2510a5f50f::t_c9422297b42d69 4045
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "b304fff8b6dd8c00fc3f90e874014e5691b5f548",
+  "prompts": {},
+  "sessions": {
+    "s_0338a0f83c8b69": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033pUDOCYUtRj6nkYt9uwj",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_57831b47042d16": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033pUHYQIWjkcBKwsvYL72",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_7fb9332008182e": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033pnbdPfIls5rL7FzZFQ7",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_a530518cd7f90b": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033pncFXYe7CaO3vYa6m70",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_b3d3ff62198592": {
+      "agent_id": {
+        "tool": "amp",
+        "id": "TU-033pULm6IjG5lBqih7P9oo",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    },
+    "s_fa0f2510a5f50f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0a477004affe6ESqMYRxst0Wef",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    }
+  }
+}
