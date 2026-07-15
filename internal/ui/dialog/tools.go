@@ -72,6 +72,7 @@ func NewTools(com *common.Common) *Tools {
 
 	t.list = list.NewList()
 	t.list.Focus()
+	t.list.RegisterRenderCallback(list.FocusedRenderCallback(t.list))
 
 	t.keyMap.Toggle = key.NewBinding(
 		key.WithKeys("enter", "ctrl+y", "space"),
