@@ -1,0 +1,19 @@
+internal/ui/dialog/commands.go
+  s_e73552920b9788::t_9466686b7f6b45 353
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ebc1de42bf753bd335c7d3b1fd6243e6ab611529",
+  "prompts": {},
+  "sessions": {
+    "s_e73552920b9788": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_09b2ac274ffeyPZ0F6on7mZFEb",
+        "model": "unknown"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    }
+  }
+}
