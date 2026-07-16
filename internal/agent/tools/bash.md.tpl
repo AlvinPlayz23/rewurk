@@ -7,7 +7,7 @@ Common shell builtins and core utils available on Windows.
 </cross_platform>
 
 <execution_steps>
-1. Directory Verification: If creating directories/files, use LS tool to verify parent exists
+1. Directory Verification: If creating directories/files, verify parent exists first
 2. Security Check: Banned commands ({{ .BannedCommands }}) return error - explain to user. Safe read-only commands execute without prompts
 3. Command Execution: Execute with proper quoting, capture output
 4. Output Processing: Truncate if exceeds {{ .MaxOutputLength }} characters
@@ -16,7 +16,7 @@ Common shell builtins and core utils available on Windows.
 
 <usage_notes>
 - Command required, working_dir optional (defaults to current directory)
-- IMPORTANT: Use Grep/Glob/Agent tools instead of 'find'/'grep'. Use Read/LS tools instead of 'cat'/'head'/'tail'/'ls'
+- IMPORTANT: Use the grep/glob/agent tools instead of 'find'/'grep', and the read tool instead of 'cat'/'head'/'tail'
 - Chain with ';' or '&&', avoid newlines except in quoted strings
 - Each command runs in independent shell (no state persistence between calls)
 - Prefer absolute paths over 'cd' (use 'cd' only if user explicitly requests)
