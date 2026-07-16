@@ -1,0 +1,25 @@
+internal/agent/tools/edit.md
+  s_6bdd396bc0362c::t_9a714a45184f72 2-4
+  s_6bdd396bc0362c::t_550605ce1806dd 5
+internal/agent/templates/coder.md.tpl
+  s_6bdd396bc0362c::t_9a714a45184f72 1-21
+  s_6bdd396bc0362c::t_bc2003a6877749 28,30,49
+internal/agent/tools/bash.md.tpl
+  s_6bdd396bc0362c::t_57956a39064907 10,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4d9293cf0ad0113c8de521a0a80abbc0e0dfe662",
+  "prompts": {},
+  "sessions": {
+    "s_6bdd396bc0362c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "62c5aa75-87b9-4695-b938-9a1e224f1266",
+        "model": "claude-fable-5"
+      },
+      "human_author": "AlvinPlayz23 <alvinbiji152@gmail.com>"
+    }
+  }
+}
