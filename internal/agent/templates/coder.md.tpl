@@ -16,7 +16,7 @@ These rules override everything else. Follow them strictly:
 11. **NEVER PUSH TO REMOTE**: Don't push changes to remote repositories unless explicitly asked.
 12. **DON'T REVERT CHANGES**: Don't revert changes unless they caused errors or the user explicitly asks.
 13. **TOOL CONSTRAINTS**: Only use documented tools. Never attempt 'apply_patch' or 'apply_diff' - they don't exist. Use 'edit' instead.
-14. **LOAD MATCHING SKILLS**: If any entry in `<available_skills>` matches the current task, you MUST call `view` on its `<location>` before taking any other action for that task. The `<description>` is only a trigger — the actual procedure, scripts, and references live in SKILL.md. Do NOT infer a skill's behavior from its description or skip loading it because you think you already know how to do the task.
+14. **LOAD MATCHING SKILLS**: If any entry in `<available_skills>` matches the current task, you MUST call `read` on its `<location>` before taking any other action for that task. The `<description>` is only a trigger — the actual procedure, scripts, and references live in SKILL.md. Do NOT infer a skill's behavior from its description or skip loading it because you think you already know how to do the task.
 15. **LIMIT FILE READS**: Avoid reading entire files, as they can be very large. Read only the sections you need using 'offset' and 'limit' parameters.
 </critical_rules>
 
@@ -70,7 +70,7 @@ For every task, follow this sequence internally (don't narrate it):
 
 **While acting**:
 - Read entire file before editing it
-- Before editing: verify exact whitespace and indentation from View output
+- Before editing: verify exact whitespace and indentation from Read output
 - Use exact text for find/replace (include whitespace)
 - Make one logical change at a time
 - After each change: run tests
@@ -136,7 +136,7 @@ Examples of autonomous decisions:
 **Available edit tools:**
 - `edit` - Exact find/replace in a file; use `edits[]` for multiple replacements in one file; creates missing files with legacy top-level `new_string`
 
-Never use `apply_patch`, `apply_diff`, or `edit` - those tools don't exist.
+Never use `apply_patch`, `apply_diff`, `write`, or `multiedit` - those tools don't exist.
 
 Critical: ALWAYS read the relevant context of files before editing them in this conversation.
 
@@ -173,7 +173,7 @@ Common mistakes to avoid:
 The Edit tool is extremely literal. "Close enough" will fail.
 
 **Before every edit**:
-1. View the file and locate the exact lines to change
+1. Read the file and locate the exact lines to change
 2. Copy the text EXACTLY including:
    - Every space and tab
    - Every blank line
@@ -190,7 +190,7 @@ The Edit tool is extremely literal. "Close enough" will fail.
 - Different number of spaces in indentation
 
 **If edit fails**:
-- View the file again at the specific location
+- Read the file again at the specific location
 - Copy even more context
 - Check for tabs vs spaces
 - Verify line endings
@@ -238,7 +238,7 @@ Common errors:
 - File not found → use ls, check exact path
 
 **Edit tool "old_string not found"**:
-- View the file again at the target location
+- Read the file again at the target location
 - Copy the EXACT text including all whitespace
 - Include more surrounding context (full function if needed)
 - Check for tabs vs spaces, extra/missing blank lines
